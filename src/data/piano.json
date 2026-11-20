@@ -1,0 +1,1276 @@
+{
+ "obiettivi": {
+  "kcal": [
+   1600,
+   2100
+  ],
+  "proteine": [
+   80,
+   130
+  ]
+ },
+ "inizio": "2026-01-05",
+ "fuso": "Europe/Rome",
+ "allenamento": {
+  "giorni": [
+   1,
+   4
+  ],
+  "ora": "19:00",
+  "descrizione": "20 minuti, a casa, con un tappetino",
+  "riscaldamento": {
+   "nome": "Riscaldamento",
+   "dettaglio": "Marcia sul posto e rotazioni delle spalle.",
+   "secondi": 180
+  },
+  "circuito": [
+   {
+    "nome": "Squat",
+    "dettaglio": "Schiena dritta, scendi finché le cosce sono parallele al pavimento."
+   },
+   {
+    "nome": "Piegamenti sulle ginocchia",
+    "dettaglio": "Corpo dritto dalle ginocchia alle spalle."
+   },
+   {
+    "nome": "Ponte per i glutei",
+    "dettaglio": "Sdraiati sulla schiena, piedi a terra: solleva il bacino e scendi piano."
+   },
+   {
+    "nome": "Plank",
+    "dettaglio": "Sui gomiti, pancia stretta.",
+    "secondi": 30
+   }
+  ],
+  "ripetizioni": "10-12 ripetizioni",
+  "giri": 3,
+  "pausa": 30,
+  "progressione": [
+   "Quando 12 ripetizioni sono facili, aggiungi un giro.",
+   "Plank: 5 secondi in più ogni settimana."
+  ]
+ },
+ "pasti": [
+  {
+   "id": "colazione",
+   "nome": "Colazione",
+   "ora": "07:30"
+  },
+  {
+   "id": "pranzo",
+   "nome": "Pranzo",
+   "ora": "13:00"
+  },
+  {
+   "id": "merenda",
+   "nome": "Merenda",
+   "ora": "16:30"
+  },
+  {
+   "id": "cena",
+   "nome": "Cena",
+   "ora": "20:00"
+  }
+ ],
+ "settimana": [
+  {
+   "giorno": "Lunedì",
+   "pasti": {
+    "colazione": [
+     "yogurt-avena-e-banana"
+    ],
+    "pranzo": [
+     "pasta-al-pomodoro",
+     "pasta-pomodoro-e-ceci"
+    ],
+    "merenda": [
+     "yogurt-e-mela",
+     "pane-e-grana"
+    ],
+    "cena": [
+     "pollo-alla-piastra-con-insalata",
+     "frittata-con-pomodori-e-insalata"
+    ]
+   }
+  },
+  {
+   "giorno": "Martedì",
+   "pasti": {
+    "colazione": [
+     "uova-strapazzate-e-pane"
+    ],
+    "pranzo": [
+     "pasta-e-lenticchie"
+    ],
+    "merenda": [
+     "yogurt-e-mela"
+    ],
+    "cena": [
+     "merluzzo-al-forno-con-patate",
+     "lenticchie-in-umido-con-pane"
+    ]
+   }
+  },
+  {
+   "giorno": "Mercoledì",
+   "pasti": {
+    "colazione": [
+     "yogurt-avena-e-banana"
+    ],
+    "pranzo": [
+     "insalata-di-ceci-pomodori-e-mozzarella"
+    ],
+    "merenda": [
+     "pane-e-grana"
+    ],
+    "cena": [
+     "frittata-con-pomodori-e-insalata"
+    ]
+   }
+  },
+  {
+   "giorno": "Giovedì",
+   "pasti": {
+    "colazione": [
+     "uova-strapazzate-e-pane"
+    ],
+    "pranzo": [
+     "pasta-al-pomodoro",
+     "pasta-pomodoro-e-ceci",
+     "pasta-al-forno-con-mozzarella"
+    ],
+    "merenda": [
+     "yogurt-e-mela"
+    ],
+    "cena": [
+     "pollo-alla-piastra-con-insalata"
+    ]
+   }
+  },
+  {
+   "giorno": "Venerdì",
+   "pasti": {
+    "colazione": [
+     "yogurt-avena-e-banana"
+    ],
+    "pranzo": [
+     "pasta-e-lenticchie"
+    ],
+    "merenda": [
+     "yogurt-e-mela",
+     "pane-e-grana"
+    ],
+    "cena": [
+     "merluzzo-al-forno-con-patate",
+     "lenticchie-in-umido-con-pane"
+    ]
+   }
+  },
+  {
+   "giorno": "Sabato",
+   "pasti": {
+    "colazione": [
+     "uova-strapazzate-e-pane"
+    ],
+    "pranzo": [
+     "insalata-di-ceci-pomodori-e-mozzarella"
+    ],
+    "cena": [
+     "pizza"
+    ]
+   }
+  },
+  {
+   "giorno": "Domenica",
+   "pasti": {
+    "colazione": [
+     "uova-strapazzate-e-pane"
+    ],
+    "pranzo": [
+     "insalata-di-ceci-pomodori-e-mozzarella"
+    ],
+    "cena": [
+     "frittata-con-pomodori-e-insalata"
+    ]
+   }
+  }
+ ],
+ "ricette": {
+  "yogurt-avena-e-banana": {
+   "nome": "Yogurt, avena e banana",
+   "ingredienti": [
+    [
+     "Caffè",
+     ""
+    ],
+    [
+     "Yogurt greco 0%",
+     "150 g"
+    ],
+    [
+     "Fiocchi d'avena",
+     "60 g"
+    ],
+    [
+     "Banana",
+     "120 g"
+    ]
+   ],
+   "passi": [
+    "Mescola yogurt e avena, poi aggiungi la banana a rondelle."
+   ],
+   "minuti": 3,
+   "kcal": 416,
+   "prot": 24,
+   "prodotti": {
+    "yogurt": 150,
+    "avena": 60,
+    "banane": 120
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 0,
+     "prot": 0
+    },
+    {
+     "kcal": 86,
+     "prot": 15.0,
+     "prodotto": "yogurt",
+     "q": 150
+    },
+    {
+     "kcal": 223,
+     "prot": 8.1,
+     "prodotto": "avena",
+     "q": 60
+    },
+    {
+     "kcal": 107,
+     "prot": 1.3,
+     "prodotto": "banane",
+     "q": 120
+    }
+   ]
+  },
+  "pasta-al-pomodoro": {
+   "nome": "Pasta al pomodoro",
+   "ingredienti": [
+    [
+     "Pasta",
+     "110 g"
+    ],
+    [
+     "Pomodori",
+     "200 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Grana Padano",
+     "15 g"
+    ],
+    [
+     "Basilico",
+     ""
+    ]
+   ],
+   "passi": [
+    "Metti a bollire l'acqua salata.",
+    "In padella scalda l'olio e cuoci i pomodori a pezzi per 10 minuti.",
+    "Cuoci la pasta per 10 minuti, scolala e saltala nel sugo.",
+    "Finisci con il grana e il basilico."
+   ],
+   "minuti": 20,
+   "kcal": 576,
+   "prot": 20,
+   "prodotti": {
+    "pasta": 110,
+    "pomodori": 200,
+    "grana": 15
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 392,
+     "prot": 13.2,
+     "prodotto": "pasta",
+     "q": 110
+    },
+    {
+     "kcal": 36,
+     "prot": 2.0,
+     "prodotto": "pomodori",
+     "q": 200
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 59,
+     "prot": 5.0,
+     "prodotto": "grana",
+     "q": 15
+    },
+    {
+     "kcal": 0,
+     "prot": 0
+    }
+   ]
+  },
+  "pasta-pomodoro-e-ceci": {
+   "nome": "Pasta, pomodoro e ceci",
+   "ingredienti": [
+    [
+     "Pasta",
+     "80 g"
+    ],
+    [
+     "Ceci in scatola",
+     "120 g, mezza lattina"
+    ],
+    [
+     "Pomodori",
+     "150 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Grana Padano",
+     "10 g"
+    ]
+   ],
+   "passi": [
+    "Cuoci i pomodori a pezzi con l'olio per 5 minuti, poi aggiungi i ceci sciacquati.",
+    "Cuoci la pasta per 10 minuti e saltala nel sugo con un mestolo d'acqua di cottura.",
+    "Finisci con il grana."
+   ],
+   "minuti": 20,
+   "kcal": 585,
+   "prot": 23,
+   "prodotti": {
+    "pasta": 80,
+    "ceci": 120,
+    "pomodori": 150,
+    "grana": 10
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 285,
+     "prot": 9.6,
+     "prodotto": "pasta",
+     "q": 80
+    },
+    {
+     "kcal": 144,
+     "prot": 8.4,
+     "prodotto": "ceci",
+     "q": 120
+    },
+    {
+     "kcal": 27,
+     "prot": 1.5,
+     "prodotto": "pomodori",
+     "q": 150
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 39,
+     "prot": 3.3,
+     "prodotto": "grana",
+     "q": 10
+    }
+   ]
+  },
+  "yogurt-e-mela": {
+   "nome": "Yogurt e mela",
+   "ingredienti": [
+    [
+     "Yogurt greco 0%",
+     "150 g"
+    ],
+    [
+     "Mela",
+     "150 g"
+    ]
+   ],
+   "passi": [],
+   "minuti": 0,
+   "kcal": 164,
+   "prot": 15,
+   "prodotti": {
+    "yogurt": 150,
+    "mele": 150
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 86,
+     "prot": 15.0,
+     "prodotto": "yogurt",
+     "q": 150
+    },
+    {
+     "kcal": 78,
+     "prot": 0.5,
+     "prodotto": "mele",
+     "q": 150
+    }
+   ]
+  },
+  "pane-e-grana": {
+   "nome": "Pane e grana",
+   "ingredienti": [
+    [
+     "Pane integrale",
+     "40 g"
+    ],
+    [
+     "Grana Padano",
+     "20 g"
+    ]
+   ],
+   "passi": [],
+   "minuti": 0,
+   "kcal": 174,
+   "prot": 10,
+   "prodotti": {
+    "pane": 40,
+    "grana": 20
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 96,
+     "prot": 3.2,
+     "prodotto": "pane",
+     "q": 40
+    },
+    {
+     "kcal": 78,
+     "prot": 6.6,
+     "prodotto": "grana",
+     "q": 20
+    }
+   ]
+  },
+  "pollo-alla-piastra-con-insalata": {
+   "nome": "Pollo alla piastra con insalata",
+   "ingredienti": [
+    [
+     "Petto di pollo",
+     "180 g"
+    ],
+    [
+     "Insalata",
+     "100 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Pane integrale",
+     "80 g"
+    ],
+    [
+     "Limone",
+     "mezzo"
+    ]
+   ],
+   "passi": [
+    "Scalda bene la piastra e cuoci il pollo per 4 minuti per lato.",
+    "Insalata con l'olio e il succo di limone; pane a parte."
+   ],
+   "minuti": 15,
+   "kcal": 495,
+   "prot": 49,
+   "prodotti": {
+    "pollo": 180,
+    "insalata": 100,
+    "pane": 80
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 198,
+     "prot": 41.4,
+     "prodotto": "pollo",
+     "q": 180
+    },
+    {
+     "kcal": 15,
+     "prot": 1.5,
+     "prodotto": "insalata",
+     "q": 100
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 192,
+     "prot": 6.4,
+     "prodotto": "pane",
+     "q": 80
+    },
+    {
+     "kcal": 0,
+     "prot": 0
+    }
+   ]
+  },
+  "frittata-con-pomodori-e-insalata": {
+   "nome": "Frittata con pomodori e insalata",
+   "ingredienti": [
+    [
+     "Uova",
+     "3"
+    ],
+    [
+     "Grana Padano",
+     "10 g"
+    ],
+    [
+     "Pomodori",
+     "100 g"
+    ],
+    [
+     "Insalata",
+     "80 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Pane integrale",
+     "60 g"
+    ]
+   ],
+   "passi": [
+    "Sbatti le uova con il grana e versale in padella con 5 g di olio.",
+    "Cuoci a fuoco basso con il coperchio per 5 minuti, gira e cuoci altri 3 minuti.",
+    "Insalata e pomodori con il resto dell'olio; pane a parte."
+   ],
+   "minuti": 15,
+   "kcal": 528,
+   "prot": 30,
+   "prodotti": {
+    "uova": 3,
+    "grana": 10,
+    "pomodori": 100,
+    "insalata": 80,
+    "pane": 60
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 225,
+     "prot": 19.5,
+     "prodotto": "uova",
+     "q": 3
+    },
+    {
+     "kcal": 39,
+     "prot": 3.3,
+     "prodotto": "grana",
+     "q": 10
+    },
+    {
+     "kcal": 18,
+     "prot": 1.0,
+     "prodotto": "pomodori",
+     "q": 100
+    },
+    {
+     "kcal": 12,
+     "prot": 1.2,
+     "prodotto": "insalata",
+     "q": 80
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 144,
+     "prot": 4.8,
+     "prodotto": "pane",
+     "q": 60
+    }
+   ]
+  },
+  "uova-strapazzate-e-pane": {
+   "nome": "Uova strapazzate e pane",
+   "ingredienti": [
+    [
+     "Caffè",
+     ""
+    ],
+    [
+     "Uova",
+     "2"
+    ],
+    [
+     "Pane integrale",
+     "80 g"
+    ],
+    [
+     "Olio EVO",
+     "5 g"
+    ],
+    [
+     "Sale e pepe",
+     ""
+    ]
+   ],
+   "passi": [
+    "Scalda l'olio in padella a fuoco medio.",
+    "Versa le uova sbattute con un pizzico di sale e mescola per 2 minuti, finché si rapprendono.",
+    "Servile sul pane tostato."
+   ],
+   "minuti": 8,
+   "kcal": 387,
+   "prot": 19,
+   "prodotti": {
+    "uova": 2,
+    "pane": 80
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 0,
+     "prot": 0
+    },
+    {
+     "kcal": 150,
+     "prot": 13.0,
+     "prodotto": "uova",
+     "q": 2
+    },
+    {
+     "kcal": 192,
+     "prot": 6.4,
+     "prodotto": "pane",
+     "q": 80
+    },
+    {
+     "kcal": 45,
+     "prot": 0.0
+    },
+    {
+     "kcal": 0,
+     "prot": 0
+    }
+   ]
+  },
+  "pasta-e-lenticchie": {
+   "nome": "Pasta e lenticchie",
+   "ingredienti": [
+    [
+     "Pasta",
+     "80 g"
+    ],
+    [
+     "Lenticchie secche",
+     "60 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Grana Padano",
+     "10 g"
+    ]
+   ],
+   "passi": [
+    "Lessa le lenticchie in acqua salata per 25 minuti.",
+    "Aggiungi la pasta e un po' d'acqua calda e cuoci per 10 minuti, mescolando.",
+    "Condisci con l'olio a crudo e il grana."
+   ],
+   "minuti": 40,
+   "kcal": 588,
+   "prot": 27,
+   "prodotti": {
+    "pasta": 80,
+    "lenticchie": 60,
+    "grana": 10
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 285,
+     "prot": 9.6,
+     "prodotto": "pasta",
+     "q": 80
+    },
+    {
+     "kcal": 175,
+     "prot": 13.8,
+     "prodotto": "lenticchie",
+     "q": 60
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 39,
+     "prot": 3.3,
+     "prodotto": "grana",
+     "q": 10
+    }
+   ]
+  },
+  "merluzzo-al-forno-con-patate": {
+   "nome": "Merluzzo al forno con patate",
+   "ingredienti": [
+    [
+     "Merluzzo surgelato",
+     "200 g"
+    ],
+    [
+     "Patate",
+     "300 g"
+    ],
+    [
+     "Olio EVO",
+     "15 g"
+    ],
+    [
+     "Limone",
+     "mezzo"
+    ]
+   ],
+   "passi": [
+    "Il merluzzo va scongelato in frigo dalla sera prima.",
+    "Accendi il forno a 200 gradi e cuoci le patate a spicchi con metà dell'olio per 20 minuti.",
+    "Aggiungi il merluzzo con sale e limone e cuoci altri 15 minuti."
+   ],
+   "minuti": 40,
+   "kcal": 525,
+   "prot": 40,
+   "prodotti": {
+    "merluzzo": 200,
+    "patate": 300
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 150,
+     "prot": 34.0,
+     "prodotto": "merluzzo",
+     "q": 200
+    },
+    {
+     "kcal": 240,
+     "prot": 6.0,
+     "prodotto": "patate",
+     "q": 300
+    },
+    {
+     "kcal": 135,
+     "prot": 0.0
+    },
+    {
+     "kcal": 0,
+     "prot": 0
+    }
+   ]
+  },
+  "lenticchie-in-umido-con-pane": {
+   "nome": "Lenticchie in umido con pane",
+   "ingredienti": [
+    [
+     "Lenticchie secche",
+     "80 g"
+    ],
+    [
+     "Pomodori",
+     "100 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Pane integrale",
+     "80 g"
+    ]
+   ],
+   "passi": [
+    "Cuoci le lenticchie con i pomodori a pezzi e un bicchiere d'acqua per 30 minuti.",
+    "Condisci con l'olio a crudo; pane a parte."
+   ],
+   "minuti": 35,
+   "kcal": 533,
+   "prot": 26,
+   "prodotti": {
+    "lenticchie": 80,
+    "pomodori": 100,
+    "pane": 80
+   },
+   "fuori": false,
+   "ripiego": true,
+   "valori": [
+    {
+     "kcal": 233,
+     "prot": 18.4,
+     "prodotto": "lenticchie",
+     "q": 80
+    },
+    {
+     "kcal": 18,
+     "prot": 1.0,
+     "prodotto": "pomodori",
+     "q": 100
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 192,
+     "prot": 6.4,
+     "prodotto": "pane",
+     "q": 80
+    }
+   ]
+  },
+  "insalata-di-ceci-pomodori-e-mozzarella": {
+   "nome": "Insalata di ceci, pomodori e mozzarella",
+   "ingredienti": [
+    [
+     "Ceci in scatola",
+     "una lattina, 240 g sgocciolati"
+    ],
+    [
+     "Pomodori",
+     "150 g"
+    ],
+    [
+     "Mozzarella",
+     "125 g"
+    ],
+    [
+     "Olio EVO",
+     "10 g"
+    ],
+    [
+     "Pane integrale",
+     "40 g"
+    ]
+   ],
+   "passi": [
+    "Sciacqua e sgocciola i ceci.",
+    "Mescolali con i pomodori a pezzi e la mozzarella a cubetti.",
+    "Condisci con olio e sale; pane a parte."
+   ],
+   "minuti": 10,
+   "kcal": 817,
+   "prot": 45,
+   "prodotti": {
+    "ceci": 240,
+    "pomodori": 150,
+    "mozzarella": 125,
+    "pane": 40
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 288,
+     "prot": 16.8,
+     "prodotto": "ceci",
+     "q": 240
+    },
+    {
+     "kcal": 27,
+     "prot": 1.5,
+     "prodotto": "pomodori",
+     "q": 150
+    },
+    {
+     "kcal": 316,
+     "prot": 23.4,
+     "prodotto": "mozzarella",
+     "q": 125
+    },
+    {
+     "kcal": 90,
+     "prot": 0.0
+    },
+    {
+     "kcal": 96,
+     "prot": 3.2,
+     "prodotto": "pane",
+     "q": 40
+    }
+   ]
+  },
+  "pasta-al-forno-con-mozzarella": {
+   "nome": "Pasta al forno con mozzarella",
+   "ingredienti": [
+    [
+     "Pasta",
+     "100 g"
+    ],
+    [
+     "Pomodori",
+     "200 g"
+    ],
+    [
+     "Mozzarella",
+     "125 g"
+    ],
+    [
+     "Olio EVO",
+     "5 g"
+    ]
+   ],
+   "passi": [
+    "Accendi il forno a 200 gradi e cuoci la pasta per 6 minuti, a metà cottura.",
+    "Mescolala con i pomodori a pezzi, l'olio e metà della mozzarella, in una teglia.",
+    "Copri con il resto della mozzarella e cuoci in forno per 15 minuti.",
+    "Quel giorno salta la mela della merenda."
+   ],
+   "minuti": 35,
+   "kcal": 675,
+   "prot": 37,
+   "prodotti": {
+    "pasta": 100,
+    "pomodori": 200,
+    "mozzarella": 125
+   },
+   "fuori": false,
+   "valori": [
+    {
+     "kcal": 356,
+     "prot": 12.0,
+     "prodotto": "pasta",
+     "q": 100
+    },
+    {
+     "kcal": 36,
+     "prot": 2.0,
+     "prodotto": "pomodori",
+     "q": 200
+    },
+    {
+     "kcal": 316,
+     "prot": 23.4,
+     "prodotto": "mozzarella",
+     "q": 125
+    },
+    {
+     "kcal": 45,
+     "prot": 0.0
+    }
+   ]
+  },
+  "pizza": {
+   "nome": "Pizza",
+   "ingredienti": [
+    [
+     "Pizza margherita",
+     "1"
+    ]
+   ],
+   "passi": [],
+   "minuti": 0,
+   "kcal": 800,
+   "prot": 30,
+   "prodotti": {},
+   "fuori": true,
+   "nota": "Fuori casa, niente da cucinare: goditela.",
+   "valori": [
+    {
+     "kcal": 800,
+     "prot": 30
+    }
+   ]
+  }
+ },
+ "cibi": [
+  {
+   "id": "banana",
+   "nome": "Banana",
+   "porzione": "1 banana",
+   "kcal": 107,
+   "prot": 1,
+   "prodotti": {
+    "banane": 120
+   }
+  },
+  {
+   "id": "mela",
+   "nome": "Mela",
+   "porzione": "1 mela",
+   "kcal": 78,
+   "prot": 0,
+   "prodotti": {
+    "mele": 150
+   }
+  },
+  {
+   "id": "yogurt-greco-0",
+   "nome": "Yogurt greco 0%",
+   "porzione": "1 vasetto",
+   "kcal": 86,
+   "prot": 15,
+   "prodotti": {
+    "yogurt": 150
+   }
+  },
+  {
+   "id": "uovo-sodo",
+   "nome": "Uovo sodo",
+   "porzione": "1 uovo",
+   "kcal": 75,
+   "prot": 6,
+   "prodotti": {
+    "uova": 1
+   }
+  },
+  {
+   "id": "grana-padano",
+   "nome": "Grana Padano",
+   "porzione": "20 g",
+   "kcal": 78,
+   "prot": 7,
+   "prodotti": {
+    "grana": 20
+   }
+  },
+  {
+   "id": "mandarino",
+   "nome": "Mandarino",
+   "porzione": "1 mandarino",
+   "kcal": 42,
+   "prot": 1,
+   "prodotti": {}
+  }
+ ],
+ "spesa": [
+  {
+   "id": "banane",
+   "reparto": "Frutta e verdura",
+   "nome": "Banane",
+   "serve": "3",
+   "formato": "1 × casco da 6",
+   "q": 360,
+   "conf": 720,
+   "confNome": "casco da 6",
+   "pezzo": 120,
+   "fresco": true
+  },
+  {
+   "id": "mele",
+   "reparto": "Frutta e verdura",
+   "nome": "Mele",
+   "serve": "4",
+   "formato": "1 × sacchetto da 6",
+   "q": 600,
+   "conf": 900,
+   "confNome": "sacchetto da 6",
+   "pezzo": 150
+  },
+  {
+   "id": "pomodori",
+   "reparto": "Frutta e verdura",
+   "nome": "Pomodori",
+   "serve": "1150 g",
+   "formato": "3 × vaschetta da 500 g",
+   "q": 1150,
+   "conf": 500,
+   "confNome": "vaschetta da 500 g",
+   "fresco": true
+  },
+  {
+   "id": "insalata",
+   "reparto": "Frutta e verdura",
+   "nome": "Insalata",
+   "serve": "360 g",
+   "formato": "2 × busta da 250 g",
+   "q": 360,
+   "conf": 250,
+   "confNome": "busta da 250 g",
+   "fresco": true
+  },
+  {
+   "id": "patate",
+   "reparto": "Frutta e verdura",
+   "nome": "Patate",
+   "serve": "600 g",
+   "formato": "1 × sacchetto da 1 kg",
+   "q": 600,
+   "conf": 1000,
+   "confNome": "sacchetto da 1 kg"
+  },
+  {
+   "id": "pane",
+   "reparto": "Pane",
+   "nome": "Pane integrale",
+   "serve": "760 g",
+   "formato": "2 × pagnotta da 500 g",
+   "q": 760,
+   "conf": 500,
+   "confNome": "pagnotta da 500 g",
+   "tieni": "fuori, nel sacchetto",
+   "congela": "a fette",
+   "scongela": "pane"
+  },
+  {
+   "id": "yogurt",
+   "reparto": "Frigo",
+   "nome": "Yogurt greco 0%",
+   "serve": "1050 g",
+   "formato": "3 × vasetto da 500 g",
+   "q": 1050,
+   "conf": 500,
+   "confNome": "vasetto da 500 g",
+   "fresco": true
+  },
+  {
+   "id": "uova",
+   "reparto": "Frigo",
+   "nome": "Uova",
+   "serve": "17",
+   "formato": "3 × confezione da 6",
+   "q": 17,
+   "conf": 6,
+   "confNome": "confezione da 6",
+   "pezzo": 1
+  },
+  {
+   "id": "mozzarella",
+   "reparto": "Frigo",
+   "nome": "Mozzarelle",
+   "serve": "4",
+   "formato": "4 × mozzarella da 125 g",
+   "q": 500,
+   "conf": 125,
+   "confNome": "mozzarella da 125 g",
+   "pezzo": 125,
+   "fresco": true
+  },
+  {
+   "id": "grana",
+   "reparto": "Frigo",
+   "nome": "Grana Padano",
+   "serve": "140 g",
+   "formato": "1 × pezzo da 200 g",
+   "q": 140,
+   "conf": 200,
+   "confNome": "pezzo da 200 g"
+  },
+  {
+   "id": "pollo",
+   "reparto": "Carne: porzionala e congelala all'arrivo",
+   "nome": "Petto di pollo",
+   "serve": "360 g",
+   "formato": "1 × vaschetta da 500 g",
+   "q": 360,
+   "conf": 500,
+   "confNome": "vaschetta da 500 g",
+   "tieni": "in frigo",
+   "scongela": "pollo"
+  },
+  {
+   "id": "merluzzo",
+   "reparto": "Surgelati",
+   "nome": "Merluzzo",
+   "serve": "400 g",
+   "formato": "1 × confezione da 400 g",
+   "q": 400,
+   "conf": 400,
+   "confNome": "confezione da 400 g",
+   "scongela": "pesce"
+  },
+  {
+   "id": "avena",
+   "reparto": "Dispensa",
+   "nome": "Fiocchi d'avena",
+   "serve": "180 g",
+   "formato": "1 × pacco da 500 g",
+   "q": 180,
+   "conf": 500,
+   "confNome": "pacco da 500 g"
+  },
+  {
+   "id": "pasta",
+   "reparto": "Dispensa",
+   "nome": "Pasta",
+   "serve": "380 g",
+   "formato": "1 × pacco da 500 g",
+   "q": 380,
+   "conf": 500,
+   "confNome": "pacco da 500 g"
+  },
+  {
+   "id": "lenticchie",
+   "reparto": "Dispensa",
+   "nome": "Lenticchie secche",
+   "serve": "120 g",
+   "formato": "1 × pacco da 500 g",
+   "q": 120,
+   "conf": 500,
+   "confNome": "pacco da 500 g"
+  },
+  {
+   "id": "ceci",
+   "reparto": "Dispensa",
+   "nome": "Ceci in scatola",
+   "serve": "960 g",
+   "formato": "4 × lattina da 400 g (240 g sgocciolati)",
+   "q": 960,
+   "conf": 240,
+   "confNome": "lattina da 400 g (240 g sgocciolati)",
+   "sgocciolato": true
+  }
+ ],
+ "spesaExtra": [
+  {
+   "reparto": "Dispensa",
+   "nome": "Caffè"
+  },
+  {
+   "reparto": "Dispensa",
+   "nome": "Olio, sale, pepe, limone"
+  }
+ ],
+ "reparti": [
+  "Frutta e verdura",
+  "Pane",
+  "Frigo",
+  "Carne: porzionala e congelala all'arrivo",
+  "Surgelati",
+  "Dispensa"
+ ],
+ "scontrino": [],
+ "articoli": {},
+ "note": [
+  {
+   "titolo": "Pesi",
+   "testo": "Tutti i pesi sono a crudo; i ceci in scatola si pesano sgocciolati."
+  },
+  {
+   "titolo": "Scongelare",
+   "testo": "Pollo e merluzzo vanno in frigo dalla sera prima: l'app te lo ricorda alle 22:30."
+  },
+  {
+   "titolo": "Avvertenza",
+   "testo": "Piano d'esempio inventato: non è un consiglio medico né nutrizionale."
+  }
+ ]
+}

@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* Stile da app fitness (riferimento: OpenNutriTracker): fondo crema, card bianche tonde, accento verde. */
+:root {
+  --bg: #f4f1ea;
+  --card: #ffffff;
+  --ink: #1b1d1a;
+  --muted: #6c7069;
+  --line: #e7e2d7;
+  --accent: #10784f;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe4;
+  --prot: #1f8a84;
+  --carb: #c4891d;
+  --fat: #d1543a;
+  --carb-soft: #f6ead3;
+  --fat-soft: #f8e1db;
+  /* Menu a tendina, campi numerici e barre di scorrimento seguono il tema del telefono */
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111311;
+    --card: #1c1f1c;
+    --ink: #ecede8;
+    --muted: #9ba097;
+    --line: #2b2f2a;
+    --accent: #3cc287;
+    --accent-ink: #06291a;
+    --accent-soft: #183527;
+    --prot: #3fb6ae;
+    --carb: #e0a640;
+    --fat: #ea7458;
+    --carb-soft: #3a2f1a;
+    --fat-soft: #3d221b;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-prot: var(--prot);
+  --color-carb: var(--carb);
+  --color-fat: var(--fat);
+  --color-carb-soft: var(--carb-soft);
+  --color-fat-soft: var(--fat-soft);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spazio per la barra in basso e per la "home indicator" dell'iPhone. */
+.pb-nav {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+@utility card {
+  @apply rounded-3xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.05)];
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm;
+}
+
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-[15px] font-semibold text-accent-ink transition active:scale-[0.97] disabled:opacity-50;
+}
+
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-card px-5 py-3 text-[15px] font-semibold text-ink transition active:scale-[0.97] disabled:opacity-50;
+}
+
+@utility field {
+  @apply w-full rounded-2xl border border-line bg-bg px-4 py-3 text-base outline-none focus:border-accent;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Con un <dialog> modale aperto (la guida) lo scorrimento non passa alla pagina sotto. */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+@utility titolo-sezione {
+  @apply mt-6 mb-2 px-1 text-[17px] font-semibold;
+}
