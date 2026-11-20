@@ -30,7 +30,8 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 > **In English.** CosaMangio ("what do I eat?") is a self-hosted web app to follow a personal meal plan from the
 > phone's home screen: the meal of the moment with step-by-step cooking timers, recipes that rotate week by week,
 > the weekly shopping list and pantry, and push notifications. Everyone hosts their own copy (Supabase + Vercel)
-> with their own plan, written in a single Python file that an AI agent can fill in from a questionnaire.
+> with their own plan, written in a single Python file that an AI agent can fill in from a questionnaire. A
+> household can share one copy: each user gets their own plan at login.
 > **The interface and the docs are in Italian.** MIT license. Not medical advice.
 
 ## Cosa fa
@@ -48,8 +49,8 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 - 💪 **Allenamento, se vuoi.** Le sedute della settimana, da spostare con un tocco, e la seduta guidata con i
   timer.
 - 📱 **Un'app sulla Home.** Si installa dal browser, anche su iPhone, e si apre come un'app.
-- 🔒 **Solo tua.** Ognuno ospita la sua copia con il suo piano: un utente per installazione, nessuna
-  registrazione aperta.
+- 🔒 **Solo vostra.** Ognuno ospita la sua copia, senza registrazione aperta. In casa la stessa copia può servire
+  più persone, ognuna col suo piano: lo sceglie il login.
 
 ## Il tuo piano
 
@@ -83,6 +84,14 @@ flowchart LR
 
 Vuoi scriverlo a mano? `PIANO.md` descrive ogni campo e `piano/esempio.py` è un piano completo da copiare.
 `src/data/piano.json` non si modifica a mano e va committato: il deploy non esegue Python.
+
+### Più persone nella stessa copia
+
+Per una coppia o una famiglia basta una copia. Crea un utente Supabase per persona e scrivi il piano di ognuno
+come sopra, generando il JSON in `piano/<nome>.json`. Registralo in `src/data/altri-piani.ts`
+(`import nome from "../../piano/<nome>.json"` e `{ nome }`) e scrivi nella variabile `PIANI`, su Vercel e in
+`.env.local`, `id-utente:nome`, separati da virgola se sono più d'uno. L'id è in Supabase → Authentication →
+Users. Chi non è in `PIANI` usa `src/data/piano.json`. Pasti segnati, spesa e notifiche restano di ognuno.
 
 ## Messa in funzione
 
@@ -135,6 +144,9 @@ perché i dati su Supabase puntano al loro nome.
 - I nomi dei timer riconoscono i cibi da un elenco di parole italiane; con ricette diverse usano il nome della
   ricetta.
 - L'avviso del freezer è alle 22:30 per tutti, e l'obiettivo dell'acqua è 2 litri.
+- I piani stanno nel codice che il browser scarica: chi conosce l'indirizzo dell'app li può leggere anche
+  senza login. Pasti segnati, spesa e scorte no, restano su Supabase, visibili solo all'utente. Nel piano non
+  scrivere quello che vuoi tenere privato.
 
 ## Sviluppo
 
