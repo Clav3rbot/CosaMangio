@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { CalendarDays, ChefHat, Dumbbell, House, ShoppingCart, UserRound } from "lucide-react";
 import { guidaDaRiaprire } from "@/components/Guida";
 import { ALLENAMENTO } from "@/lib/allenamento";
@@ -29,9 +29,14 @@ function pastoDaCucinare() {
   return p ? { data, id: p.id } : primo(aggiungiGiorni(data, 1));
 }
 
+const nessunaIscrizione = () => () => {};
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  // L'HTML statico è costruito col piano predefinito, il browser usa quello dell'utente (usaPiano): le pagine si
+  // disegnano solo nel browser, così nessuno vede per un attimo il piano di un altro.
+  const nelBrowser = useSyncExternalStore(nessunaIscrizione, () => true, () => false);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -42,6 +47,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const g = guidaDaRiaprire();
     if (g && g !== location.pathname + location.search) router.replace(g);
   }, [router]);
+
+  if (!nelBrowser) return null;
 
   return (
     <>

@@ -1,11 +1,12 @@
-import { aggiungiGiorni, indiceGiorno, piano, type Allenamento, type Esercizio } from "@/lib/piano";
+import { ALLENAMENTO, aggiungiGiorni, indiceGiorno, piano, type Allenamento, type Esercizio } from "@/lib/piano";
 
-/** L'allenamento del piano (piano.json). null = il piano non ne ha: pagina e avvisi delle sedute spariscono. */
-export const ALLENAMENTO = piano.allenamento;
+// Per le pagine, che nel browser hanno un solo piano. Il codice che gira anche nel cron legge piano.allenamento:
+// questa copia non è detto che segua usaPiano.
+export { ALLENAMENTO };
 
 /** I giorni (YYYY-MM-DD) delle sedute della settimana che parte da "lunedi": quelli spostati, se no i soliti. */
 export const giorniSedute = (lunedi: string, spostate?: string[] | null) =>
-  ALLENAMENTO ? (spostate ?? ALLENAMENTO.giorni.map((i) => aggiungiGiorni(lunedi, i))) : [];
+  piano.allenamento ? (spostate ?? piano.allenamento.giorni.map((i) => aggiungiGiorni(lunedi, i))) : [];
 
 const elenco = new Intl.ListFormat("it-IT");
 /** "martedì e giovedì" */

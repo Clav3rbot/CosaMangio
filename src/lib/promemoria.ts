@@ -1,6 +1,5 @@
-import { ALLENAMENTO, nomiEsercizi } from "@/lib/allenamento";
+import { nomiEsercizi } from "@/lib/allenamento";
 import {
-  INIZIO,
   aggiungiGiorni,
   daScongelare,
   mancantiDi,
@@ -38,8 +37,8 @@ export function promemoriaDelGiorno(
   manca: (id: string) => boolean = () => false
 ): Promemoria[] {
   // Prima dell'inizio niente avvisi; la sera prima del primo giorno solo quello dello scongelamento.
-  if (data < aggiungiGiorni(INIZIO, -1)) return [];
-  const iniziato = data >= INIZIO;
+  if (data < aggiungiGiorni(piano.inizio, -1)) return [];
+  const iniziato = data >= piano.inizio;
   const out: Promemoria[] = [];
   for (const p of iniziato ? pastiDelGiorno(data) : []) {
     const r = piano.ricette[ricettaDi(data, p, scelta, manca)];
@@ -73,12 +72,12 @@ export function promemoriaDelGiorno(
     });
   }
 
-  if (iniziato && allenamento && ALLENAMENTO) {
+  if (iniziato && allenamento && piano.allenamento) {
     out.push({
       chiave: "allenamento",
-      minuti: minutiDa(ALLENAMENTO.ora),
-      titolo: `Allenamento · ${ALLENAMENTO.descrizione}`,
-      testo: `${nomiEsercizi(ALLENAMENTO)}.`,
+      minuti: minutiDa(piano.allenamento.ora),
+      titolo: `Allenamento · ${piano.allenamento.descrizione}`,
+      testo: `${nomiEsercizi(piano.allenamento)}.`,
       url: "/allenamento",
     });
   }

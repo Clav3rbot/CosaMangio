@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function traduciErrore(message: string) {
@@ -13,7 +12,6 @@ function traduciErrore(message: string) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState<string | null>(null);
@@ -29,8 +27,9 @@ export default function LoginPage() {
       setAttesa(false);
       return;
     }
-    router.replace("/");
-    router.refresh();
+    // Pagina ricaricata, non navigazione interna: il proxy scrive il piano dell'utente nel cookie e i moduli ripartono
+    // con quello (usaPiano in src/lib/piano.ts).
+    location.replace("/");
   }
 
   return (

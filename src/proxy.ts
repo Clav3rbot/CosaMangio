@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { pianoDi } from "@/lib/piano";
 
 // Senza sessione si va al login.
 export async function proxy(request: NextRequest) {
@@ -52,6 +53,13 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
+  }
+
+  // Il piano dell'utente, per il browser: src/lib/piano.ts lo legge da questo cookie prima di disegnare le pagine.
+  if (isAuthenticated) {
+    const nome = pianoDi(String(data!.claims.sub));
+    if (request.cookies.get("piano")?.value !== nome)
+      response.cookies.set("piano", nome, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   }
 
   return response;

@@ -1,5 +1,4 @@
 import {
-  INIZIO,
   adessoNelFuso,
   aggiungiGiorni,
   minutiDa,
@@ -21,7 +20,8 @@ export const giorniDa = (dal: string, oggi: string) =>
 /** Dopo quanti giorni un fresco arrivato con la spesa non si propone più nei pasti: è finito o da buttare. */
 export const GIORNI_FRESCO_PASTI = 7;
 
-const freschi = new Set(piano.spesa.filter((v) => v.fresco).map((v) => v.id));
+// Calcolato a ogni chiamata, non una volta per modulo: il cron cambia piano da un utente all'altro (usaPiano).
+const fresco = (id: string) => piano.spesa.some((v) => v.id === id && v.fresco);
 
 /** Cosa non hai, per proporre e segnalare i pasti: quello ordinato e non arrivato, quello segnato finito e i freschi
  *  che non sono arrivati con le spese dell'ultima settimana. Dispensa, uova, pane e carne senza scorta si suppongono
@@ -32,7 +32,7 @@ export function mancaDa(spesa: Record<string, string> | null, scorte: Record<str
   return (id: string) => {
     const s = scorte?.[id];
     if (spesa?.[id] === "manca" || s?.quantita === 0) return true;
-    if (!tracciate || !freschi.has(id)) return false;
+    if (!tracciate || !fresco(id)) return false;
     return !s || giorniDa(s.dal, oggi) > GIORNI_FRESCO_PASTI;
   };
 }
@@ -48,7 +48,7 @@ export function consumoFra(
   saltati?: (data: string, pasto: PastoId) => string[] | undefined
 ) {
   const tot: Record<string, number> = {};
-  for (let d = da.data < INIZIO ? INIZIO : da.data; d <= a.data; d = aggiungiGiorni(d, 1)) {
+  for (let d = da.data < piano.inizio ? piano.inizio : da.data; d <= a.data; d = aggiungiGiorni(d, 1)) {
     for (const p of pastiDelGiorno(d)) {
       const m = minutiDa(p.ora);
       if ((d === da.data && m <= da.minuti) || (d === a.data && m > a.minuti)) continue;
@@ -76,7 +76,7 @@ export function primaMancanza(
   const resta = { ...stima };
   const finiti = new Set<string>();
   let primo: { data: string; pasto: PastoId } | null = null;
-  for (let d = adesso.data < INIZIO ? INIZIO : adesso.data, n = 0; n < giorni && !primo; d = aggiungiGiorni(d, 1), n++) {
+  for (let d = adesso.data < piano.inizio ? piano.inizio : adesso.data, n = 0; n < giorni && !primo; d = aggiungiGiorni(d, 1), n++) {
     for (const p of pastiDelGiorno(d)) {
       if (d === adesso.data && minutiDa(p.ora) <= adesso.minuti) continue;
       const manca = mancaDa(

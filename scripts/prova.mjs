@@ -229,4 +229,27 @@ const fuoriPasto = [
 ];
 assert.deepEqual(consumoFuoriPasto(fuoriPasto, segnataDal), { mele: 150, banane: 120 });
 
+// --- Piano per utente: PIANI dice il nome, usaPiano lo carica e il codice del cron lo segue ---
+// Con "@/lib/..." come nell'app: jiti carica due volte lo stesso file se lo si chiede con due percorsi diversi.
+const modPiano = await jiti.import("@/lib/piano");
+const modAllenamento = await jiti.import("@/lib/allenamento");
+const { promemoriaDelGiorno: promemoriaCron } = await jiti.import("@/lib/promemoria");
+process.env.PIANI = " a:uno , b:due";
+assert.equal(modPiano.pianoDi("b"), "due");
+assert.equal(modPiano.pianoDi("c"), "");
+const { default: altriPiani } = await jiti.import("../src/data/altri-piani.ts");
+for (const [nome, p] of Object.entries(altriPiani)) {
+  modPiano.usaPiano(nome);
+  assert.equal(modPiano.piano.inizio, p.inizio);
+  assert.deepEqual(modPiano.piano.allenamento, p.allenamento);
+  assert.deepEqual(modPiano.pastiDelGiorno(p.inizio).map((s) => s.id), Object.keys(p.settimana[0].pasti));
+  // Quello che usa il cron: le sedute della settimana e gli avvisi del giorno.
+  assert.equal(modAllenamento.giorniSedute(p.inizio).length, p.allenamento?.giorni.length ?? 0);
+  const avvisi = promemoriaCron(p.inizio, nessuna, true).map((x) => x.chiave);
+  assert.equal(avvisi.some((k) => k.includes("allen")), !!p.allenamento);
+}
+modPiano.usaPiano("non esiste");
+assert.equal(modPiano.piano.inizio, "2026-01-05");
+assert.equal(modAllenamento.giorniSedute("2026-01-05").length, 2);
+
 console.log("OK");

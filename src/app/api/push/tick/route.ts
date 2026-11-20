@@ -3,7 +3,7 @@ import type { PushSubscription } from "web-push";
 import { giorniSedute } from "@/lib/allenamento";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviaNotifica } from "@/lib/push";
-import { adessoNelFuso, aggiungiGiorni, lunediDi, type PastoId } from "@/lib/piano";
+import { adessoNelFuso, aggiungiGiorni, lunediDi, pianoDi, usaPiano, type PastoId } from "@/lib/piano";
 import { promemoriaDelGiorno } from "@/lib/promemoria";
 import { mancaDa } from "@/lib/scorte";
 
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
     ]);
     const errore = pasti.error ?? allenamenti.error ?? spesa.error ?? scorte.error;
     if (errore) return NextResponse.json({ error: errore.message }, { status: 500 });
+    // Il piano di questo utente, fino a "dovuti": da qui in giù niente await, così un'altra richiesta non lo cambia.
+    usaPiano(pianoDi(uid));
     const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
     // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
     const sedutaOggi =

@@ -1,6 +1,8 @@
 import dati from "@/data/piano.json";
+import altriPiani from "@/data/altri-piani";
 
 // piano.json lo genera scripts/build_dieta.py da piano/mio.py: le ricette si cambiano lì, non a mano qui.
+// Altri utenti possono avere un piano loro (src/data/altri-piani.ts): vedi usaPiano.
 export type PastoId = "colazione" | "pranzo" | "merenda" | "cena" | "dopocena";
 export type Ricetta = {
   nome: string;
@@ -91,9 +93,56 @@ type Piano = {
   note: { titolo: string; testo: string }[];
 };
 
-export const piano = dati as unknown as Piano;
+/** Nome del piano di un utente secondo PIANI ("id:nome,id:nome", solo lato server). "" = src/data/piano.json. */
+export const pianoDi = (uid: string) =>
+  (process.env.PIANI ?? "")
+    .split(",")
+    .map((v) => v.trim().split(":"))
+    .find(([id]) => id === uid)?.[1] ?? "";
 
-const voci = new Map(piano.spesa.map((v) => [v.id, v]));
+/** Sempre lo stesso oggetto: usaPiano ne cambia il contenuto, così lo vede cambiare anche chi lo ha importato. */
+export const piano = {} as Piano;
+/** Primo giorno del piano (un lunedì): prima non partono notifiche e la prima settimana propone i piatti del PDF.
+ *  Copia di piano.inizio per le pagine; il codice che gira nel cron legge piano.inizio (vedi usaPiano). */
+export let INIZIO: string;
+/** L'allenamento del piano. null = il piano non ne ha: pagina e avvisi delle sedute spariscono.
+ *  Copia di piano.allenamento per le pagine; il codice che gira nel cron legge piano.allenamento. */
+export let ALLENAMENTO: Allenamento | null;
+let voci: Map<string, VoceSpesa>;
+// Le ricette di ogni pasto in tutta la settimana: un pasto scambiato fra due giorni resta valido.
+let perPasto: Map<PastoId, Set<string>>;
+let fmtFuso: Intl.DateTimeFormat;
+
+/**
+ * Sceglie il piano e ricalcola quello che ne deriva. Nel browser vale per tutta la pagina: il proxy scrive il nome
+ * nel cookie "piano" e il login ricarica la pagina, così ogni modulo parte già col piano giusto. Sul server il cron
+ * lo cambia per ogni utente subito prima dei calcoli sincroni. Lì non vale niente di calcolato una volta per modulo,
+ * né INIZIO e ALLENAMENTO importati da un altro file (a seconda del bundler restano quelli del primo piano): il codice
+ * del cron legge l'oggetto piano, o valori ricalcolati qui dentro.
+ */
+export function usaPiano(nome = "") {
+  for (const k of Object.keys(piano)) delete (piano as Record<string, unknown>)[k];
+  Object.assign(piano, altriPiani[nome] ?? dati);
+  INIZIO = piano.inizio;
+  ALLENAMENTO = piano.allenamento;
+  voci = new Map(piano.spesa.map((v) => [v.id, v]));
+  perPasto = new Map();
+  for (const g of piano.settimana)
+    for (const [id, opzioni] of Object.entries(g.pasti) as [PastoId, string[]][])
+      opzioni.forEach((o) => perPasto.set(id, (perPasto.get(id) ?? new Set()).add(o)));
+  fmtFuso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: piano.fuso,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
+usaPiano(
+  typeof document === "undefined" ? "" : decodeURIComponent(/(?:^|; )piano=([^;]*)/.exec(document.cookie)?.[1] ?? "")
+);
 
 /** Kcal, proteine e prodotti di una ricetta senza gli ingredienti che non hai mangiato (per nome). */
 export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
@@ -122,30 +171,12 @@ export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean) =>
     .filter(manca)
     .map((id) => voci.get(id)!.nome.toLowerCase());
 
-// Le ricette di ogni pasto in tutta la settimana: un pasto scambiato fra due giorni resta valido.
-const perPasto = new Map<PastoId, Set<string>>();
-for (const g of piano.settimana)
-  for (const [id, opzioni] of Object.entries(g.pasti) as [PastoId, string[]][])
-    opzioni.forEach((o) => perPasto.set(id, (perPasto.get(id) ?? new Set()).add(o)));
 export const ricettaValida = (pasto: PastoId, id: string) => !!perPasto.get(pasto)?.has(id);
 
 /** Le ricette fra cui si sceglie insieme a questa, nel giorno da cui viene: una ricetta arrivata da uno scambio porta
  *  con sé le sue alternative. */
 export const sorelleDi = (pasto: PastoId, id: string) =>
   piano.settimana.map((g) => g.pasti[pasto] ?? []).find((o) => o.includes(id)) ?? [id];
-
-/** Primo giorno del piano (un lunedì): prima non partono notifiche e la prima settimana propone i piatti del PDF. */
-export const INIZIO = piano.inizio;
-
-const fmtFuso = new Intl.DateTimeFormat("en-CA", {
-  timeZone: piano.fuso,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
 
 /** Data (YYYY-MM-DD) e minuti dalla mezzanotte nel fuso del piano: il server di Vercel gira in UTC. */
 export function adessoNelFuso(d = new Date()) {
