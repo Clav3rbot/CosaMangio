@@ -17,10 +17,10 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 
 <br>
 
-<img src="docs/schermate/oggi.png" width="160" alt="Oggi: calorie, proteine, pasti e allenamento del giorno">
+<img src="docs/schermate/oggi.png" width="160" alt="Oggi: il prossimo pasto e i pasti del giorno">
 <img src="docs/schermate/pasto.png" width="160" alt="Pasto: la ricetta proposta, le alternative e cosa non hai">
 <img src="docs/schermate/guida.png" width="160" alt="Guida: un passaggio della ricetta alla volta, con il timer in corso">
-<img src="docs/schermate/spesa.png" width="160" alt="Spesa: cosa comprare per una settimana">
+<img src="docs/schermate/spesa.png" width="160" alt="Spesa: quando fare la prossima spesa e cosa comprare">
 <img src="docs/schermate/allenamento.png" width="160" alt="Allenamento: sedute della settimana e seduta guidata">
 
 <sub>Le schermate usano il piano d'esempio, inventato.</sub>
