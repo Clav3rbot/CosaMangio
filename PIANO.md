@@ -35,7 +35,7 @@ chiedi.
 | Tu | `SOTTOTITOLO` (età, altezza, peso), `OBIETTIVI` (solo le fasce date da un professionista), `NOTE` |
 | Salute e alimentazione | quali alimenti e ricette usare: niente di quello che è vietato o dà fastidio |
 | Giornata tipo | `PASTI` (quali e a che ora), `INIZIO`, le ricette fuori casa per i pranzi fuori |
-| Fame e abitudini | quantità, colazioni leggere o no, `NOTE` (acqua, caffè) |
+| Fame e abitudini | quantità, colazioni leggere o no, dolci o salate, `NOTE` (acqua, caffè) |
 | Alcol e pasti liberi | ricette con `fuori=True` (pizza, pasto libero) e le loro kcal |
 | Spesa | `PRODOTTI` (confezioni, freschi, freezer), `SPESA_EXTRA`, quante verdure diverse |
 | Cucina | `minuti` e `passi` delle ricette, attrezzi da usare, quante ricette diverse |
