@@ -249,6 +249,13 @@ modPiano.usaPiano("non esiste");
 assert.equal(modPiano.piano.inizio, "2026-01-05");
 assert.equal(modAllenamento.giorniSedute("2026-01-05").length, 2);
 
+// Nome e preferenze li scrive l'utente nella sua riga: niente di quello che può metterci fa saltare il piano.
+for (const [nome, pref] of [["constructor", {}], ["__proto__", {}], ["", null], ["", "x"], ["", []], ["", { orari: 3, consegna: "x", pause: [null, 5], muti: [null] }]]) {
+  modPiano.usaPiano(nome, pref);
+  assert.equal(modPiano.piano.inizio, "2026-01-05", `${nome} ${JSON.stringify(pref)}`);
+  assert.equal(promemoriaCron("2026-01-06", nessuna, true).length, 6);
+}
+
 // --- Preferenze: orari dell'utente sopra quelli del piano, avvisi spenti ---
 const avvisiCon = (pref) => {
   modPiano.usaPiano("", pref);

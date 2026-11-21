@@ -4,7 +4,7 @@ import { giorniSedute } from "@/lib/allenamento";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviaNotifica } from "@/lib/push";
 import { adessoNelFuso, aggiungiGiorni, lunediDi, usaPiano, type PastoId, type Profilo } from "@/lib/piano";
-import { promemoriaDelGiorno } from "@/lib/promemoria";
+import { promemoriaDelGiorno, type Promemoria } from "@/lib/promemoria";
 import { mancaDa } from "@/lib/scorte";
 
 // Un promemoria parte se il suo orario è passato da meno di 15 minuti: il cron gira ogni 5,
@@ -49,25 +49,32 @@ export async function POST(request: Request) {
     ]);
     const errore = pasti.error ?? allenamenti.error ?? spesa.error ?? scorte.error;
     if (errore) return NextResponse.json({ error: errore.message }, { status: 500 });
-    // Il piano di questo utente, fino a "dovuti": da qui in giù niente await, così un'altra richiesta non lo cambia.
-    usaPiano(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
-    const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
-    // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
-    const sedutaOggi =
-      giorniSedute(lunedi, spostate.data?.giorni as string[] | undefined).includes(adesso.data) &&
-      !allenamenti.data!.some((r) => r.giorno === adesso.data);
-    // Come nell'app: i pasti proposti sono quelli che puoi fare con quello che hai.
-    const manca = mancaDa(
-      Object.fromEntries(spesa.data!.map((r) => [r.prodotto as string, r.stato as string])),
-      Object.fromEntries(scorte.data!.map((r) => [r.prodotto as string, { quantita: r.quantita, dal: r.dal }])),
-      adesso.data
-    );
-    const dovuti = promemoriaDelGiorno(
-      adesso.data,
-      (d: string, p: PastoId) => scelte.get(`${d}|${p}`),
-      sedutaOggi,
-      manca
-    ).filter((p) => p.minuti <= adesso.minuti && adesso.minuti - p.minuti < FINESTRA_MINUTI);
+    let dovuti: Promemoria[];
+    try {
+      // Il piano di questo utente, fino a "dovuti": da qui in giù niente await, così un'altra richiesta non lo cambia.
+      usaPiano(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
+      const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
+      // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
+      const sedutaOggi =
+        giorniSedute(lunedi, spostate.data?.giorni as string[] | undefined).includes(adesso.data) &&
+        !allenamenti.data!.some((r) => r.giorno === adesso.data);
+      // Come nell'app: i pasti proposti sono quelli che puoi fare con quello che hai.
+      const manca = mancaDa(
+        Object.fromEntries(spesa.data!.map((r) => [r.prodotto as string, r.stato as string])),
+        Object.fromEntries(scorte.data!.map((r) => [r.prodotto as string, { quantita: r.quantita, dal: r.dal }])),
+        adesso.data
+      );
+      dovuti = promemoriaDelGiorno(
+        adesso.data,
+        (d: string, p: PastoId) => scelte.get(`${d}|${p}`),
+        sedutaOggi,
+        manca
+      ).filter((p) => p.minuti <= adesso.minuti && adesso.minuti - p.minuti < FINESTRA_MINUTI);
+    } catch (e) {
+      // Queste righe le scrive l'utente: se le sue fanno saltare i conti, gli altri ricevono lo stesso i loro avvisi.
+      console.error("avvisi saltati per un utente:", (e as Error).message);
+      continue;
+    }
 
     for (const p of dovuti) {
       if (dry) {

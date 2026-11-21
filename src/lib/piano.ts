@@ -138,9 +138,12 @@ let fmtFuso: Intl.DateTimeFormat;
  * utente subito prima dei calcoli sincroni: lì non vale niente di calcolato una volta per modulo, tutto si legge
  * dall'oggetto piano. Le preferenze arrivano dal database: quello che non è un'ora o una data valida si ignora.
  */
-export function usaPiano(nome = "", pref: Preferenze = {}) {
+export function usaPiano(nome = "", preferenze: Preferenze = {}) {
   for (const k of Object.keys(piano)) delete (piano as Record<string, unknown>)[k];
-  const base = (altriPiani[nome] ?? dati) as Omit<Piano, "avvisi" | "consegna" | "pause">;
+  // Nome e preferenze li può scrivere l'utente nella sua riga: un nome che non è un piano ("constructor") vale il
+  // predefinito, e preferenze che non sono un oggetto (null) valgono nessuna preferenza.
+  const pref: Preferenze = preferenze && typeof preferenze === "object" && !Array.isArray(preferenze) ? preferenze : {};
+  const base = (Object.hasOwn(altriPiani, nome) ? altriPiani[nome] : dati) as Omit<Piano, "avvisi" | "consegna" | "pause">;
   const c = pref.consegna;
   const ora = (v: unknown, solita: string) => (oraValida(v) ? v : solita);
   const pasti = base.pasti.map((p) => ({ ...p, ora: ora(pref.orari?.[p.id], p.ora) }));
