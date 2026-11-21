@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { leggiProfilo } from "@/lib/dati";
+import { usaProfilo } from "@/lib/piano";
 import { createClient } from "@/lib/supabase/client";
 
 function traduciErrore(message: string) {
@@ -27,8 +29,9 @@ export default function LoginPage() {
       setAttesa(false);
       return;
     }
-    // Pagina ricaricata, non navigazione interna: il proxy scrive il piano dell'utente nel cookie e i moduli ripartono
-    // con quello (usaPiano in src/lib/piano.ts).
+    // Il profilo di chi entra (piano e preferenze) si salva in questo browser, poi la pagina si ricarica: i moduli
+    // ripartono con quello. Se non si legge, lo rilegge AppShell prima di disegnare.
+    usaProfilo(await leggiProfilo().catch(() => null));
     location.replace("/");
   }
 

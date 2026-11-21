@@ -4,16 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Anello from "@/components/Anello";
-import { ALLENAMENTO } from "@/lib/allenamento";
 import { useMese } from "@/lib/dati";
 import {
-  INIZIO,
   dataLunga,
   giorniDelMese,
   giornoDelPiano,
   indiceGiorno,
   nomeMese,
   pastiDelGiorno,
+  piano,
   spostaMese,
 } from "@/lib/piano";
 
@@ -24,8 +23,8 @@ export default function Mese({ oggi }: { oggi: string }) {
   const [mese, setMese] = useState(() => giornoDelPiano(oggi).slice(0, 7));
   const { dati, errore } = useMese(mese);
   const giorni = giorniDelMese(mese);
-  // Si contano solo i giorni del piano già arrivati: prima di INIZIO e nel futuro non c'è niente da seguire.
-  const nelPiano = (d: string) => d >= INIZIO && d <= oggi;
+  // Si contano solo i giorni del piano già arrivati: prima di piano.inizio e nel futuro non c'è niente da seguire.
+  const nelPiano = (d: string) => d >= piano.inizio && d <= oggi;
   const completo = (d: string) => nelPiano(d) && (dati?.fatti[d] ?? 0) >= pastiDelGiorno(d).length;
   const passati = giorni.filter(nelPiano);
 
@@ -111,7 +110,7 @@ export default function Mese({ oggi }: { oggi: string }) {
 
       <p className="mt-3 text-xs text-muted">
         L&apos;anello è la quota di pasti fatti, il cerchio pieno un giorno completo
-        {ALLENAMENTO ? ", il punto rosso l'allenamento" : ""}.
+        {piano.allenamento ? ", il punto rosso l'allenamento" : ""}.
       </p>
     </section>
   );

@@ -5,9 +5,9 @@ import { CalendarClock, Check, ListFilter, PackageCheck, PackageX, Snowflake } f
 import ArrivoSpesa from "@/components/ArrivoSpesa";
 import BottoneFatto from "@/components/BottoneFatto";
 import { usePorzioni, useAdesso, useNomiScontrino, useScorte, useSpesa, type StatoSpesa } from "@/lib/dati";
-import { aggiungiGiorni, dataLunga, piano, type VoceSpesa } from "@/lib/piano";
+import { aggiungiGiorni, dataLunga, minutiDa, piano, prossimaConsegna, type VoceSpesa } from "@/lib/piano";
 import type { NomeArticolo } from "@/lib/scontrino";
-import { GIORNI_FRESCO, confezioniDaComprare, contaPerSpesa, quantoMostrare } from "@/lib/scorte";
+import { GIORNI_FRESCO, confezioniDaComprare, contaPerSpesa, quantoMostrare, quantoServe } from "@/lib/scorte";
 
 export default function Spesa() {
   const { stato, errore, imposta } = useSpesa();
@@ -24,14 +24,16 @@ export default function Spesa() {
   const hai = (v: VoceSpesa) => scorte.stima[v.id] ?? 0;
   // Quello che vale per la prossima spesa: i freschi arrivati da giorni no.
   const conta = (v: VoceSpesa) => contaPerSpesa(v, hai(v), scorte.giorni[v.id] ?? 0);
-  const coperto = (v: VoceSpesa) => conta(v) >= v.q;
+  // Quanto serve: la quantità fissa della lista, o per i freschi quella dei piatti della settimana dopo la consegna.
+  const serve = (v: VoceSpesa) => quantoServe(v, scorte.fabbisogno);
+  const coperto = (v: VoceSpesa) => conta(v) >= serve(v);
   const presi = piano.spesa.filter(coperto).length;
   // Cosa aspetti dalla consegna: quello che non hai già.
   const inArrivo = piano.spesa.filter((v) => !coperto(v));
   const daCongelare = piano.spesa.filter((v) => s[v.id] === "da_congelare");
   const nonArrivati = piano.spesa.filter((v) => s[v.id] === "manca");
   // Senza documento di consegna: si suppone che hai preso le confezioni che mancavano (almeno una).
-  const compri = (v: VoceSpesa) => Math.max(1, confezioniDaComprare(v, conta(v))) * v.conf;
+  const compri = (v: VoceSpesa) => Math.max(1, confezioniDaComprare(v, conta(v), serve(v))) * v.conf;
 
   /** Arrivato: si somma alle scorte (al posto del fresco vecchio); carne e pane passano da "porziona e congela", il
    *  non arrivato resta segnato. */
@@ -72,6 +74,15 @@ export default function Spesa() {
     return { v, presto, freezer };
   });
   const errori = [errore, scorte.errore, nomi.errore].filter(Boolean);
+  // La consegna abituale (da Tu): la spesa si ordina il giorno prima. "tardi" = qualcosa finisce prima che arrivi.
+  const consegna = adesso && prossimaConsegna(adesso);
+  const ordinaEntro = consegna ? aggiungiGiorni(consegna.data, -1) : "";
+  const finisce = scorte.prossima && {
+    data: scorte.prossima.data,
+    minuti: minutiDa(piano.pasti.find((p) => p.id === scorte.prossima!.pasto)!.ora),
+  };
+  const tardi =
+    !!consegna && !!finisce && (finisce.data < consegna.data || (finisce.data === consegna.data && finisce.minuti < consegna.minuti));
 
   return (
     <>
@@ -102,7 +113,9 @@ export default function Spesa() {
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           Quanto hai in casa lo calcolo dalla spesa arrivata, meno quello che usano i pasti del piano: ti dico
-          cosa comprare per coprire una settimana. Il fresco arrivato da più di {GIORNI_FRESCO} giorni non lo conto. Se
+          cosa comprare per coprire una settimana. Nei giorni passati in cui hai segnato almeno un pasto, quelli non
+          segnati li conto come saltati. Del fresco compri quello che usano i piatti della settimana dopo la consegna,
+          e quello arrivato da più di {GIORNI_FRESCO} giorni non lo conto. Se
           sbaglio, correggi con la spunta. Marca e formato li scegli tu con le offerte.
         </p>
         <button
@@ -115,16 +128,25 @@ export default function Spesa() {
         </button>
       </section>
 
-      {scorte.prossima && (
+      {(scorte.prossima || consegna) && (
         <section className="card mt-3 p-5" aria-label="Prossima spesa">
           <p className="flex items-center gap-2 font-semibold">
             <CalendarClock className="h-5 w-5 text-accent" /> Prossima spesa
           </p>
-          <p className="mt-2 text-sm leading-relaxed">
-            Falla arrivare prima di <strong>{dataLunga(scorte.prossima.data)}</strong>,{" "}
-            {piano.pasti.find((p) => p.id === scorte.prossima!.pasto)!.nome.toLowerCase()}. Per quel giorno finiscono:{" "}
-            {scorte.prossima.prodotti.map((id) => piano.spesa.find((v) => v.id === id)!.nome.toLowerCase()).join(", ")}.
-          </p>
+          {consegna && (
+            <p className="mt-2 text-sm leading-relaxed">
+              Consegna <strong>{dataLunga(consegna.data)}</strong> alle {piano.consegna!.ora}
+              {ordinaEntro >= adesso!.data && <>: ordina entro {ordinaEntro === adesso!.data ? "oggi" : dataLunga(ordinaEntro)}</>}.
+            </p>
+          )}
+          {scorte.prossima && (
+            <p className={`mt-2 text-sm leading-relaxed ${tardi ? "text-fat" : ""}`}>
+              {tardi ? "La consegna arriva tardi: la spesa serve" : "Falla arrivare"} prima di{" "}
+              <strong>{dataLunga(scorte.prossima.data)}</strong>,{" "}
+              {piano.pasti.find((p) => p.id === scorte.prossima!.pasto)!.nome.toLowerCase()}. Per quel giorno finiscono:{" "}
+              {scorte.prossima.prodotti.map((id) => piano.spesa.find((v) => v.id === id)!.nome.toLowerCase()).join(", ")}.
+            </p>
+          )}
         </section>
       )}
 
@@ -231,16 +253,18 @@ export default function Spesa() {
                   <li key={v.id} className="flex items-center gap-3 py-2.5 pr-3 pl-4">
                     <div className={`min-w-0 flex-1 ${coperto(v) ? "opacity-50" : ""}`}>
                       <p className={`font-semibold ${coperto(v) ? "line-through" : ""}`}>
-                        {v.nome} <span className="font-normal text-muted">· {v.serve}</span>
+                        {v.nome} <span className="font-normal text-muted">· {v.fresco && scorte.fabbisogno ? quantoMostrare(v, serve(v)) : v.serve}</span>
                       </p>
                       <p className="text-xs text-muted">
                         {st === "manca" && <span className="font-medium text-fat">Non arrivato · </span>}
                         {coperto(v) ? (
-                          <span className="font-medium text-accent">Ce l&apos;hai: ~{quantoMostrare(v, h)}</span>
+                          <span className="font-medium text-accent">
+                            {serve(v) ? `Ce l'hai: ~${quantoMostrare(v, h)}` : "Questa settimana non serve"}
+                          </span>
                         ) : (
                           <>
                             {h > 0 && `Hai ~${quantoMostrare(v, h)}${vecchio ? ` da ${scorte.giorni[v.id]} giorni` : ""} · `}
-                            compra {confezioniDaComprare(v, conta(v))} × {v.confNome}
+                            compra {confezioniDaComprare(v, conta(v), serve(v))} × {v.confNome}
                           </>
                         )}
                       </p>

@@ -91,40 +91,74 @@ type Piano = {
   /** Codice articolo Esselunga -> quantità di una confezione, nell'unità delle ricette (il documento non la scrive). */
   articoli: Record<string, number>;
   note: { titolo: string; testo: string }[];
+  /** Questi tre non stanno nel JSON: li scrive usaPiano dalle preferenze dell'utente. */
+  avvisi: { scongela: string; ordina: string; muti: string[] };
+  consegna: Consegna | null;
+  pause: Pausa[];
 };
+/** Quando arriva la spesa di solito: giorno (0 = lunedì) e ora. */
+export type Consegna = { giorno: number; ora: string };
+/** Giorni senza piano, estremi compresi (YYYY-MM-DD); senza "al" la pausa è ancora aperta. */
+export type Pausa = { dal: string; al?: string };
 
-/** Nome del piano di un utente secondo PIANI ("id:nome,id:nome", solo lato server). "" = src/data/piano.json. */
-export const pianoDi = (uid: string) =>
-  (process.env.PIANI ?? "")
-    .split(",")
-    .map((v) => v.trim().split(":"))
-    .find(([id]) => id === uid)?.[1] ?? "";
+/** Quello che l'utente cambia del suo piano dalla pagina Tu. Senza un campo vale il piano. */
+export type Preferenze = {
+  /** L'ora di un pasto ("HH:MM"), per id. */
+  orari?: Partial<Record<PastoId, string>>;
+  /** L'ora dell'avviso della sera per lo scongelamento (22:30 se manca) e quella della seduta. */
+  scongela?: string;
+  allenamento?: string;
+  /** Avvisi spenti: l'id di un pasto, "scongela", "allenamento", "spesa". */
+  muti?: string[];
+  /** La consegna della spesa: il giorno prima, all'ora "ordina" (12:00 se manca), parte l'avviso di ordinarla. */
+  consegna?: Consegna;
+  ordina?: string;
+  /** Le pause, anche quelle finite: servono al conto delle scorte. In pausa niente avvisi, e le scorte non scendono. */
+  pause?: Pausa[];
+};
+/** La riga dell'utente nella tabella profili: quale piano segue ("" = src/data/piano.json, se no un nome di
+ *  src/data/altri-piani.ts) e le sue preferenze. */
+export type Profilo = { piano: string; preferenze: Preferenze };
+
+const SCONGELA = "22:30";
+const ORDINA = "12:00";
+export const oraValida = (v: unknown): v is string => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+const dataValida = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d\d-\d\d$/.test(v);
 
 /** Sempre lo stesso oggetto: usaPiano ne cambia il contenuto, così lo vede cambiare anche chi lo ha importato. */
 export const piano = {} as Piano;
-/** Primo giorno del piano (un lunedì): prima non partono notifiche e la prima settimana propone i piatti del PDF.
- *  Copia di piano.inizio per le pagine; il codice che gira nel cron legge piano.inizio (vedi usaPiano). */
-export let INIZIO: string;
-/** L'allenamento del piano. null = il piano non ne ha: pagina e avvisi delle sedute spariscono.
- *  Copia di piano.allenamento per le pagine; il codice che gira nel cron legge piano.allenamento. */
-export let ALLENAMENTO: Allenamento | null;
 let voci: Map<string, VoceSpesa>;
 // Le ricette di ogni pasto in tutta la settimana: un pasto scambiato fra due giorni resta valido.
 let perPasto: Map<PastoId, Set<string>>;
 let fmtFuso: Intl.DateTimeFormat;
 
 /**
- * Sceglie il piano e ricalcola quello che ne deriva. Nel browser vale per tutta la pagina: il proxy scrive il nome
- * nel cookie "piano" e il login ricarica la pagina, così ogni modulo parte già col piano giusto. Sul server il cron
- * lo cambia per ogni utente subito prima dei calcoli sincroni. Lì non vale niente di calcolato una volta per modulo,
- * né INIZIO e ALLENAMENTO importati da un altro file (a seconda del bundler restano quelli del primo piano): il codice
- * del cron legge l'oggetto piano, o valori ricalcolati qui dentro.
+ * Sceglie il piano, ci applica le preferenze dell'utente e ricalcola quello che ne deriva. Nel browser vale per tutta
+ * la pagina: parte dal profilo salvato in questo browser (vedi usaProfilo). Sul server il cron lo cambia per ogni
+ * utente subito prima dei calcoli sincroni: lì non vale niente di calcolato una volta per modulo, tutto si legge
+ * dall'oggetto piano. Le preferenze arrivano dal database: quello che non è un'ora o una data valida si ignora.
  */
-export function usaPiano(nome = "") {
+export function usaPiano(nome = "", pref: Preferenze = {}) {
   for (const k of Object.keys(piano)) delete (piano as Record<string, unknown>)[k];
-  Object.assign(piano, altriPiani[nome] ?? dati);
-  INIZIO = piano.inizio;
-  ALLENAMENTO = piano.allenamento;
+  const base = (altriPiani[nome] ?? dati) as Omit<Piano, "avvisi" | "consegna" | "pause">;
+  const c = pref.consegna;
+  const ora = (v: unknown, solita: string) => (oraValida(v) ? v : solita);
+  const pasti = base.pasti.map((p) => ({ ...p, ora: ora(pref.orari?.[p.id], p.ora) }));
+  // I pasti restano in ordine di orario, come li vuole il resto del codice: se no valgono quelli del piano.
+  const inOrdine = pasti.every((p, i) => !i || pasti[i - 1].ora < p.ora);
+  Object.assign(piano, base, {
+    pasti: inOrdine ? pasti : base.pasti,
+    allenamento: base.allenamento && { ...base.allenamento, ora: ora(pref.allenamento, base.allenamento.ora) },
+    avvisi: {
+      scongela: ora(pref.scongela, SCONGELA),
+      ordina: ora(pref.ordina, ORDINA),
+      muti: Array.isArray(pref.muti) ? pref.muti : [],
+    },
+    consegna: c && [0, 1, 2, 3, 4, 5, 6].includes(c.giorno) && oraValida(c.ora) ? { giorno: c.giorno, ora: c.ora } : null,
+    pause: (Array.isArray(pref.pause) ? pref.pause : []).filter(
+      (p) => p && dataValida(p.dal) && (p.al == null || dataValida(p.al))
+    ),
+  });
   voci = new Map(piano.spesa.map((v) => [v.id, v]));
   perPasto = new Map();
   for (const g of piano.settimana)
@@ -140,9 +174,35 @@ export function usaPiano(nome = "") {
     hourCycle: "h23",
   });
 }
-usaPiano(
-  typeof document === "undefined" ? "" : decodeURIComponent(/(?:^|; )piano=([^;]*)/.exec(document.cookie)?.[1] ?? "")
-);
+
+const CHIAVE_PROFILO = "dieta:profilo";
+
+/** Il profilo salvato in questo browser. null = mai letto dal database (o sul server): AppShell lo legge prima di
+ *  disegnare le pagine. */
+export function profiloLocale(): Profilo | null {
+  if (typeof document === "undefined") return null;
+  try {
+    return JSON.parse(localStorage.getItem(CHIAVE_PROFILO) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+/** Salva il profilo in questo browser e lo applica: da qui parte la pagina la prossima volta. null lo dimentica. */
+export function usaProfilo(p: Profilo | null) {
+  try {
+    if (p) localStorage.setItem(CHIAVE_PROFILO, JSON.stringify(p));
+    else localStorage.removeItem(CHIAVE_PROFILO);
+  } catch {
+    // Memoria del browser piena o spenta: il profilo vale lo stesso, fino alla prossima ricarica.
+  }
+  usaPiano(p?.piano, p?.preferenze);
+}
+
+{
+  const p = profiloLocale();
+  usaPiano(p?.piano, p?.preferenze ?? {});
+}
 
 /** Kcal, proteine e prodotti di una ricetta senza gli ingredienti che non hai mangiato (per nome). */
 export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
@@ -199,6 +259,17 @@ export const lunediDi = (data: string) => aggiungiGiorni(data, -indiceGiorno(dat
 export const giorniDellaSettimana = (lunedi: string) =>
   Array.from({ length: 7 }, (_, i) => aggiungiGiorni(lunedi, i));
 
+/** Il giorno è dentro una pausa: niente avvisi, e delle scorte scende solo quello che segni mangiato. */
+export const inPausa = (data: string) => piano.pause.some((p) => p.dal <= data && (!p.al || data <= p.al));
+
+/** La prossima consegna della spesa da "adesso" in poi, come data e minuti. null = l'utente non l'ha detta. */
+export function prossimaConsegna(adesso: { data: string; minuti: number }) {
+  if (!piano.consegna) return null;
+  const minuti = minutiDa(piano.consegna.ora);
+  const fra = (piano.consegna.giorno - indiceGiorno(adesso.data) + 7) % 7;
+  return { data: aggiungiGiorni(adesso.data, fra === 0 && minuti <= adesso.minuti ? 7 : fra), minuti };
+}
+
 export function pastiDelGiorno(data: string) {
   const giorno = piano.settimana[indiceGiorno(data)];
   return piano.pasti.flatMap((s) => {
@@ -207,7 +278,7 @@ export function pastiDelGiorno(data: string) {
   });
 }
 
-/** Proposta della rotazione: cambia ogni lunedì. La settimana di INIZIO è la 0, cioè i piatti del PDF. Se il piatto
+/** Proposta della rotazione: cambia ogni lunedì. La settimana di piano.inizio è la 0, cioè i piatti del PDF. Se il piatto
  *  della rotazione usa qualcosa che non hai ("manca"), vale il primo che dopo di lui puoi fare con quello che hai,
  *  ripieghi compresi, meglio se con la stessa carne o pesce dal freezer: la sera prima l'avviso te l'ha fatto
  *  scongelare. Se non ce n'è nessuno resta quello della rotazione, con il suo "Non hai". */
@@ -216,7 +287,7 @@ export function ricettaProposta(data: string, opzioni: string[], manca: (id: str
   const cucinati = opzioni.filter((id) => !piano.ricette[id].fuori);
   const giro = cucinati.length ? cucinati : opzioni;
   const rotazione = giro.filter((id) => !piano.ricette[id].ripiego);
-  const settimana = Math.floor((utc(data).getTime() - utc(INIZIO).getTime()) / (7 * 86400000));
+  const settimana = Math.floor((utc(data).getTime() - utc(piano.inizio).getTime()) / (7 * 86400000));
   const k = ((settimana % rotazione.length) + rotazione.length) % rotazione.length;
   const ordine = [...rotazione.slice(k), ...rotazione.slice(0, k), ...giro.filter((id) => piano.ricette[id].ripiego)];
   const puoi = ordine.filter((id) => !Object.keys(piano.ricette[id].prodotti).some(manca));
@@ -225,7 +296,7 @@ export function ricettaProposta(data: string, opzioni: string[], manca: (id: str
 }
 
 /** Il giorno da mostrare di default: oggi, o il primo giorno del piano se non è ancora partito. */
-export const giornoDelPiano = (oggi: string) => (oggi < INIZIO ? INIZIO : oggi);
+export const giornoDelPiano = (oggi: string) => (oggi < piano.inizio ? piano.inizio : oggi);
 
 export function minutiDa(ora: string) {
   const [h, m] = ora.split(":").map(Number);

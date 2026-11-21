@@ -9,15 +9,15 @@ import Anello from "@/components/Anello";
 import IconaPasto from "@/components/IconaPasto";
 import BottoneFatto from "@/components/BottoneFatto";
 import NonHai from "@/components/NonHai";
-import { ALLENAMENTO, giorniSedute, nomiGiorni } from "@/lib/allenamento";
+import { giorniSedute, nomiGiorni } from "@/lib/allenamento";
 import { pastiCon, useAdesso, useFuoriPasto, useManca, useSettimana, useSpesa } from "@/lib/dati";
 import {
-  INIZIO,
   aggiungiGiorni,
   daScongelare,
   dataLunga,
   giornoDelPiano,
   giorniDellaSettimana,
+  inPausa,
   indiceGiorno,
   lunediDi,
   minutiDa,
@@ -65,10 +65,10 @@ function Oggi() {
   const giorniAllenamento = giorniSedute(lunediDi(giorno), dati?.spostate);
   const giornoAllenamento = giorniAllenamento.includes(giorno);
   const allenatoOggi = !!dati?.allenamenti.includes(giorno);
-  // "Stasera in frigo" parla di stasera, qualunque giorno stai guardando, come la notifica delle 22:30.
+  // "Stasera in frigo" parla di stasera, qualunque giorno stai guardando, come l'avviso della sera.
   const domani = aggiungiGiorni(oggi, 1);
   const inFrigo =
-    domani < INIZIO
+    domani < piano.inizio
       ? []
       : [
           ...new Set(
@@ -129,9 +129,15 @@ function Oggi() {
         })}
       </nav>
 
-      {oggi < INIZIO && (
+      {inPausa(giorno) && (
+        <Link href="/tu" className="mt-4 block rounded-2xl bg-carb-soft px-4 py-3 text-sm text-carb">
+          Piano in pausa: niente avvisi, e le scorte scendono solo per quello che segni mangiato. Si riprende da Tu.
+        </Link>
+      )}
+
+      {oggi < piano.inizio && (
         <p className="mt-4 rounded-2xl bg-accent-soft px-4 py-3 text-sm text-accent">
-          Il piano parte {dataLunga(INIZIO)}: le notifiche dei pasti partono da lì. La sera prima, alle 22:30, ti
+          Il piano parte {dataLunga(piano.inizio)}: le notifiche dei pasti partono da lì. La sera prima, alle {piano.avvisi.scongela}, ti
           avviso cosa spostare dal freezer al frigo.
         </p>
       )}
@@ -151,9 +157,9 @@ function Oggi() {
 
       {(inFrigo.length > 0 || (giornoAllenamento && !allenatoOggi)) && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {ALLENAMENTO && giornoAllenamento && !allenatoOggi && (
+          {piano.allenamento && giornoAllenamento && !allenatoOggi && (
             <Link href="/allenamento" className="chip">
-              <Dumbbell className="h-4 w-4 text-fat" /> Allenamento alle {ALLENAMENTO.ora}
+              <Dumbbell className="h-4 w-4 text-fat" /> Allenamento alle {piano.allenamento.ora}
             </Link>
           )}
           {inFrigo.length > 0 && (
@@ -195,11 +201,11 @@ function Oggi() {
         </div>
       </section>
 
-      <section className={`mt-3 grid gap-3 ${ALLENAMENTO ? "grid-cols-3" : "grid-cols-2"}`} aria-label="Riepilogo">
+      <section className={`mt-3 grid gap-3 ${piano.allenamento ? "grid-cols-3" : "grid-cols-2"}`} aria-label="Riepilogo">
         <Riquadro colore="var(--prot)" nome="proteine" valore={protFatte} totale={protTot} unita=" g" />
         <Riquadro colore="var(--carb)" nome="pasti" valore={fatti} totale={pasti.length} />
-        {ALLENAMENTO && (
-          <Riquadro colore="var(--fat)" nome="allenamenti" valore={sedute} totale={ALLENAMENTO.giorni.length} />
+        {piano.allenamento && (
+          <Riquadro colore="var(--fat)" nome="allenamenti" valore={sedute} totale={piano.allenamento.giorni.length} />
         )}
       </section>
 
@@ -311,7 +317,7 @@ function Oggi() {
         </details>
       )}
 
-      {ALLENAMENTO && (
+      {piano.allenamento && (
         <Link href="/allenamento" className="card mt-4 flex items-center gap-3 p-4">
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-fat-soft text-fat">
             <Dumbbell className="h-5 w-5" />
@@ -319,7 +325,7 @@ function Oggi() {
           <span className="flex-1">
             <span className="block font-semibold">Allenamento della settimana</span>
             <span className="block text-sm text-muted">
-              {sedute} di {ALLENAMENTO.giorni.length} sedute · {nomiGiorni(giorniAllenamento)} alle {ALLENAMENTO.ora}
+              {sedute} di {piano.allenamento.giorni.length} sedute · {nomiGiorni(giorniAllenamento)} alle {piano.allenamento.ora}
             </span>
           </span>
           <ChevronRight className="h-5 w-5 text-muted" />

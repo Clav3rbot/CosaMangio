@@ -89,9 +89,10 @@ Vuoi scriverlo a mano? `PIANO.md` descrive ogni campo e `piano/esempio.py` è un
 
 Per una coppia o una famiglia basta una copia. Crea un utente Supabase per persona e scrivi il piano di ognuno
 come sopra, generando il JSON in `piano/<nome>.json`. Registralo in `src/data/altri-piani.ts`
-(`import nome from "../../piano/<nome>.json"` e `{ nome }`) e scrivi nella variabile `PIANI`, su Vercel e in
-`.env.local`, `id-utente:nome`, separati da virgola se sono più d'uno. L'id è in Supabase → Authentication →
-Users. Chi non è in `PIANI` usa `src/data/piano.json`. Pasti segnati, spesa e notifiche restano di ognuno.
+(`import nome from "../../piano/<nome>.json"` e `{ nome }`), poi assegnalo all'utente nella tabella `profili`,
+dal SQL Editor di Supabase: `insert into public.profili (user_id, piano) values ('<id-utente>', '<nome>')`.
+L'id è in Authentication → Users. Chi non ha una riga usa `src/data/piano.json`. Pasti segnati, spesa, notifiche
+e orari (pagina Tu) restano di ognuno.
 
 ## Messa in funzione
 
@@ -143,7 +144,7 @@ perché i dati su Supabase puntano al loro nome.
 - Per cambiare il piano serve Python 3.9 o successivo sul computer.
 - I nomi dei timer riconoscono i cibi da un elenco di parole italiane; con ricette diverse usano il nome della
   ricetta.
-- L'avviso del freezer è alle 22:30 per tutti, e l'obiettivo dell'acqua è 2 litri.
+- L'obiettivo dell'acqua è 2 litri per tutti.
 - I piani stanno nel codice che il browser scarica: chi conosce l'indirizzo dell'app li può leggere anche
   senza login. Pasti segnati, spesa e scorte no, restano su Supabase, visibili solo all'utente. Nel piano non
   scrivere quello che vuoi tenere privato.

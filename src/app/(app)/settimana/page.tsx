@@ -5,10 +5,8 @@ import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, PackageX } from "lucide-react";
 import IconaPasto from "@/components/IconaPasto";
 import Mese from "@/components/Mese";
-import { ALLENAMENTO } from "@/lib/allenamento";
 import { pastiCon, useAdesso, useManca, useSettimana, useSpesa } from "@/lib/dati";
 import {
-  INIZIO,
   aggiungiGiorni,
   dataBreve,
   giornoDelPiano,
@@ -41,7 +39,7 @@ export default function Settimana() {
             {dataBreve(lunedi)} – {dataBreve(aggiungiGiorni(lunedi, 6))}
           </p>
           <h1 className="text-[32px] leading-tight font-bold tracking-tight">
-            {lunedi === INIZIO ? "Prima settimana" : scarto === 0 ? "Questa settimana" : scarto === 1 ? "Prossima settimana" : scarto === -1 ? "Settimana scorsa" : "Settimana"}
+            {lunedi === piano.inizio ? "Prima settimana" : scarto === 0 ? "Questa settimana" : scarto === 1 ? "Prossima settimana" : scarto === -1 ? "Settimana scorsa" : "Settimana"}
           </h1>
         </div>
         <div className="flex gap-2">
@@ -60,7 +58,7 @@ export default function Settimana() {
         </p>
       )}
 
-      <section className={`mt-4 grid gap-3 ${ALLENAMENTO ? "grid-cols-2" : "grid-cols-1"}`}>
+      <section className={`mt-4 grid gap-3 ${piano.allenamento ? "grid-cols-2" : "grid-cols-1"}`}>
         <div className="card p-4">
           <p className="text-xs text-muted">Pasti seguiti</p>
           <p className="mt-1 text-2xl font-bold">
@@ -68,12 +66,12 @@ export default function Settimana() {
             <span className="text-base font-medium text-muted">/{tutti.length}</span>
           </p>
         </div>
-        {ALLENAMENTO && (
+        {piano.allenamento && (
           <div className="card p-4">
             <p className="text-xs text-muted">Allenamenti</p>
             <p className="mt-1 text-2xl font-bold">
               {dati?.allenamenti.length ?? 0}
-              <span className="text-base font-medium text-muted">/{ALLENAMENTO.giorni.length}</span>
+              <span className="text-base font-medium text-muted">/{piano.allenamento.giorni.length}</span>
             </p>
           </div>
         )}

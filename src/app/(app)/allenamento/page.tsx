@@ -5,14 +5,14 @@ import { Play } from "lucide-react";
 import Anello from "@/components/Anello";
 import BottoneFatto from "@/components/BottoneFatto";
 import Guida, { guidaDaRiaprire } from "@/components/Guida";
-import { ALLENAMENTO, giorniSedute, passiSeduta } from "@/lib/allenamento";
+import { giorniSedute, passiSeduta } from "@/lib/allenamento";
 import { useAdesso, useSettimana } from "@/lib/dati";
-import { dataBreve, dataLunga, giorniDellaSettimana, lunediDi, type Allenamento as Piano } from "@/lib/piano";
+import { dataBreve, dataLunga, giorniDellaSettimana, lunediDi, piano, type Allenamento as Piano } from "@/lib/piano";
 
 export default function Allenamento() {
   // Senza allenamento nel piano la barra in basso non porta qui; l'indirizzo scritto a mano lo dice.
-  if (!ALLENAMENTO) return <p className="pt-8 text-center text-muted">Il piano non ha un allenamento.</p>;
-  return <Seduta a={ALLENAMENTO} />;
+  if (!piano.allenamento) return <p className="pt-8 text-center text-muted">Il piano non ha un allenamento.</p>;
+  return <Seduta a={piano.allenamento} />;
 }
 
 function Seduta({ a }: { a: Piano }) {

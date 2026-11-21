@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CalendarDays, ChefHat, Dumbbell, House, ShoppingCart, UserRound } from "lucide-react";
 import { guidaDaRiaprire } from "@/components/Guida";
-import { ALLENAMENTO } from "@/lib/allenamento";
-import { INIZIO, adessoNelFuso, aggiungiGiorni, minutiDa, pastiDelGiorno } from "@/lib/piano";
+import { leggiProfilo } from "@/lib/dati";
+import { adessoNelFuso, aggiungiGiorni, minutiDa, pastiDelGiorno, piano, profiloLocale, usaProfilo } from "@/lib/piano";
 
-const VOCI = [
+const voci = () => [
   { href: "/", label: "Oggi", Icon: House },
   { href: "/settimana", label: "Settimana", Icon: CalendarDays },
   null, // posto del tasto centrale
   { href: "/spesa", label: "Spesa", Icon: ShoppingCart },
   // Senza allenamento nel piano il quinto posto va a Tu, che se no si apre da Oggi.
-  ALLENAMENTO
+  piano.allenamento
     ? { href: "/allenamento", label: "Allena", Icon: Dumbbell }
     : { href: "/tu", label: "Tu", Icon: UserRound },
 ];
@@ -24,7 +24,7 @@ const primo = (data: string) => ({ data, id: pastiDelGiorno(data)[0].id });
 /** Il pasto da cucinare adesso: il primo di oggi non ancora passato da più di un'ora, se no il primo di domani. */
 function pastoDaCucinare() {
   const { data, minuti } = adessoNelFuso();
-  if (data < INIZIO) return primo(INIZIO);
+  if (data < piano.inizio) return primo(piano.inizio);
   const p = pastiDelGiorno(data).find((s) => minutiDa(s.ora) + 60 > minuti);
   return p ? { data, id: p.id } : primo(aggiungiGiorni(data, 1));
 }
@@ -34,12 +34,29 @@ const nessunaIscrizione = () => () => {};
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  // L'HTML statico è costruito col piano predefinito, il browser usa quello dell'utente (usaPiano): le pagine si
-  // disegnano solo nel browser, così nessuno vede per un attimo il piano di un altro.
+  // L'HTML statico è costruito col piano predefinito, il browser usa quello dell'utente (usaProfilo): le pagine si
+  // disegnano solo nel browser e solo con un profilo, così nessuno vede per un attimo il piano di un altro.
   const nelBrowser = useSyncExternalStore(nessunaIscrizione, () => true, () => false);
+  const [senzaProfilo, setSenzaProfilo] = useState(false);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
+
+  // Il profilo salvato qui si confronta col database a ogni avvio: se è cambiato (da un altro dispositivo, o non
+  // era mai stato letto) la pagina riparte con quello giusto. Se non si legge si va avanti con quello che c'è.
+  useEffect(() => {
+    leggiProfilo().then(
+      (p) => {
+        const uguale = () => JSON.stringify(p) === JSON.stringify(profiloLocale());
+        if (uguale()) return;
+        usaProfilo(p);
+        // Se il browser non l'ha salvato, ricaricare non servirebbe (e non finirebbe mai): si disegna così.
+        if (uguale()) location.reload();
+        else setSenzaProfilo(true);
+      },
+      () => setSenzaProfilo(true)
+    );
   }, []);
 
   // iOS chiude l'app in background (telefono bloccato) e la riapre dalla Home: si torna alla guida lasciata aperta.
@@ -48,7 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (g && g !== location.pathname + location.search) router.replace(g);
   }, [router]);
 
-  if (!nelBrowser) return null;
+  if (!nelBrowser || (!profiloLocale() && !senzaProfilo)) return null;
 
   return (
     <>
@@ -59,7 +76,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto grid max-w-md grid-cols-5 items-end px-2">
-          {VOCI.map((v) => {
+          {voci().map((v) => {
             if (!v) {
               return (
                 <div key="cucina" className="flex justify-center">

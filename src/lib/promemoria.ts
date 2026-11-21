@@ -2,6 +2,8 @@ import { nomiEsercizi } from "@/lib/allenamento";
 import {
   aggiungiGiorni,
   daScongelare,
+  inPausa,
+  indiceGiorno,
   mancantiDi,
   minutiDa,
   pastiDelGiorno,
@@ -29,16 +31,17 @@ export function ricettaDi(
 }
 
 /** Le notifiche di un giorno, in ordine di orario. "allenamento" = quel giorno c'è una seduta prevista e non ancora
- *  fatta; "manca" dice quali prodotti non sono arrivati con la spesa. */
+ *  fatta; "manca" dice quali prodotti non sono arrivati con la spesa. Quelli che l'utente ha spento non ci sono. */
 export function promemoriaDelGiorno(
   data: string,
   scelta: Scelta,
   allenamento: boolean,
   manca: (id: string) => boolean = () => false
 ): Promemoria[] {
-  // Prima dell'inizio niente avvisi; la sera prima del primo giorno solo quello dello scongelamento.
+  // Prima dell'inizio niente avvisi; la sera prima del primo giorno solo quello dello scongelamento. Lo stesso in
+  // pausa: niente, e l'ultima sera quello che serve per il giorno in cui riprendi.
   if (data < aggiungiGiorni(piano.inizio, -1)) return [];
-  const iniziato = data >= piano.inizio;
+  const iniziato = data >= piano.inizio && !inPausa(data);
   const out: Promemoria[] = [];
   for (const p of iniziato ? pastiDelGiorno(data) : []) {
     const r = piano.ricette[ricettaDi(data, p, scelta, manca)];
@@ -59,16 +62,28 @@ export function promemoriaDelGiorno(
   }
 
   const domani = aggiungiGiorni(data, 1);
+  const pastiDomani = inPausa(domani) ? [] : pastiDelGiorno(domani);
   const perDomani = [
-    ...new Set(pastiDelGiorno(domani).flatMap((p) => daScongelare(piano.ricette[ricettaDi(domani, p, scelta, manca)], manca))),
+    ...new Set(pastiDomani.flatMap((p) => daScongelare(piano.ricette[ricettaDi(domani, p, scelta, manca)], manca))),
   ];
   if (perDomani.length) {
     out.push({
       chiave: "scongela",
-      minuti: minutiDa("22:30"),
+      minuti: minutiDa(piano.avvisi.scongela),
       titolo: "Per domani",
       testo: `Sposta dal freezer al frigo: ${perDomani.join(", ")}.`,
       url: `/?d=${domani}`,
+    });
+  }
+
+  // La spesa si ordina il giorno prima della consegna.
+  if (piano.consegna && indiceGiorno(domani) === piano.consegna.giorno && !inPausa(domani)) {
+    out.push({
+      chiave: "spesa",
+      minuti: minutiDa(piano.avvisi.ordina),
+      titolo: "Ordina la spesa",
+      testo: `La consegna è domani alle ${piano.consegna.ora}: in Spesa trovi cosa comprare.`,
+      url: "/spesa",
     });
   }
 
@@ -81,5 +96,5 @@ export function promemoriaDelGiorno(
       url: "/allenamento",
     });
   }
-  return out.sort((a, b) => a.minuti - b.minuti);
+  return out.filter((p) => !piano.avvisi.muti.includes(p.chiave)).sort((a, b) => a.minuti - b.minuti);
 }

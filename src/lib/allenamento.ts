@@ -1,8 +1,4 @@
-import { ALLENAMENTO, aggiungiGiorni, indiceGiorno, piano, type Allenamento, type Esercizio } from "@/lib/piano";
-
-// Per le pagine, che nel browser hanno un solo piano. Il codice che gira anche nel cron legge piano.allenamento:
-// questa copia non è detto che segua usaPiano.
-export { ALLENAMENTO };
+import { aggiungiGiorni, indiceGiorno, piano, type Allenamento, type Esercizio } from "@/lib/piano";
 
 /** I giorni (YYYY-MM-DD) delle sedute della settimana che parte da "lunedi": quelli spostati, se no i soliti. */
 export const giorniSedute = (lunedi: string, spostate?: string[] | null) =>

@@ -1,5 +1,15 @@
 -- Schema dell'app CosaMangio. Da eseguire una volta nel SQL Editor del progetto Supabase.
 
+-- Profilo di un utente: quale piano segue ('' = src/data/piano.json, se no un nome di src/data/altri-piani.ts) e le
+-- sue preferenze (orari dei pasti e degli avvisi, avvisi spenti). Senza riga valgono il piano predefinito e i suoi
+-- orari. L'app scrive solo le preferenze; il piano lo assegni tu da qui (vedi README, "Più persone"). I piani stanno
+-- tutti nel codice che il browser scarica, quindi la colonna non protegge niente: dice solo quale mostrare.
+create table public.profili (
+  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
+  piano text not null default '',
+  preferenze jsonb not null default '{}'
+);
+
 -- Un pasto di un giorno: quale ricetta hai scelto (null = quella proposta dalla rotazione), se l'hai mangiato e
 -- quali ingredienti non hai mangiato (escono da kcal, proteine e consumo delle scorte).
 create table public.pasti (
@@ -81,6 +91,7 @@ create table public.push_log (
   sent_at timestamptz not null default now()
 );
 
+alter table public.profili enable row level security;
 alter table public.pasti enable row level security;
 alter table public.allenamenti enable row level security;
 alter table public.sedute_spostate enable row level security;
@@ -91,6 +102,8 @@ alter table public.fuori_pasto enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.push_log enable row level security;
 
+create policy "solo il proprio profilo" on public.profili
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "solo i propri pasti" on public.pasti
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "solo i propri allenamenti" on public.allenamenti

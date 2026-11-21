@@ -3,7 +3,7 @@ import type { PushSubscription } from "web-push";
 import { giorniSedute } from "@/lib/allenamento";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviaNotifica } from "@/lib/push";
-import { adessoNelFuso, aggiungiGiorni, lunediDi, pianoDi, usaPiano, type PastoId } from "@/lib/piano";
+import { adessoNelFuso, aggiungiGiorni, lunediDi, usaPiano, type PastoId, type Profilo } from "@/lib/piano";
 import { promemoriaDelGiorno } from "@/lib/promemoria";
 import { mancaDa } from "@/lib/scorte";
 
@@ -30,6 +30,10 @@ export async function POST(request: Request) {
   const { data: iscrizioni, error } = await sb.from("push_subscriptions").select("endpoint,user_id,subscription");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Piano e preferenze di ognuno. Chi non ha una riga (o se la tabella non si legge) segue il piano predefinito.
+  const { data: righeProfili } = await sb.from("profili").select("user_id,piano,preferenze");
+  const profili = new Map((righeProfili ?? []).map((r) => [r.user_id as string, r as Profilo]));
+
   const utenti = [...new Set(iscrizioni.map((s) => s.user_id as string))];
   const report: { utente: string; chiave: string; titolo: string; inviate?: number }[] = [];
   const domani = aggiungiGiorni(adesso.data, 1);
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
     const errore = pasti.error ?? allenamenti.error ?? spesa.error ?? scorte.error;
     if (errore) return NextResponse.json({ error: errore.message }, { status: 500 });
     // Il piano di questo utente, fino a "dovuti": da qui in giù niente await, così un'altra richiesta non lo cambia.
-    usaPiano(pianoDi(uid));
+    usaPiano(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
     const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
     // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
     const sedutaOggi =
