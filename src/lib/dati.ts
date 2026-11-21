@@ -52,9 +52,49 @@ export function pastiCon(giorno: string, dati: DatiSettimana | null, manca?: (id
   });
 }
 
+// Quello che si legge dal database resta anche in questo browser: riaprendo l'app compare subito l'ultimo stato
+// noto, senza aspettare la rete, poi si riallinea. Sono i dati di chi era collegato: login e logout li svuotano.
+const MEMORIA = "dieta:dati:";
+
+function ricordato<T>(chiave: string): T | null {
+  if (typeof document === "undefined") return null;
+  try {
+    return JSON.parse(localStorage.getItem(MEMORIA + chiave) ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function ricorda(chiave: string, valore: unknown) {
+  try {
+    localStorage.setItem(MEMORIA + chiave, JSON.stringify(valore));
+  } catch {
+    // Memoria del browser piena o spenta: alla prossima apertura si aspetta il database, come prima.
+  }
+}
+
+export function dimenticaDati() {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(MEMORIA)) localStorage.removeItem(k);
+  } catch {
+    // Senza memoria del browser non c'è niente da svuotare.
+  }
+}
+
 // Cache di modulo: cambiando scheda i dati già letti compaiono subito, poi si riallineano col DB.
 const settimane = new Map<string, DatiSettimana>();
-let spesaCache: Record<string, StatoSpesa> | null = null;
+let spesaCache = ricordato<Record<string, StatoSpesa>>("spesa");
+
+function settimana(lunedi: string) {
+  const salvata = settimane.get(lunedi) ?? ricordato<DatiSettimana>(`settimana:${lunedi}`);
+  if (salvata) settimane.set(lunedi, salvata);
+  return salvata;
+}
+
+function tieniSettimana(lunedi: string, dati: DatiSettimana) {
+  settimane.set(lunedi, dati);
+  ricorda(`settimana:${lunedi}`, dati);
+}
 
 async function userId() {
   const { data } = await createClient().auth.getSession();
@@ -100,7 +140,7 @@ export function useSettimana(lunedi: string | null) {
   // Lo stato ricorda di quale settimana sono i dati: cambiando settimana si parte dalla cache.
   const [stato, setStato] = useState<{ lunedi: string; dati: DatiSettimana } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
-  const dati = lunedi ? (stato?.lunedi === lunedi ? stato.dati : (settimane.get(lunedi) ?? null)) : null;
+  const dati = lunedi ? (stato?.lunedi === lunedi ? stato.dati : (settimana(lunedi) ?? null)) : null;
   const setDati = useCallback((d: DatiSettimana) => lunedi && setStato({ lunedi, dati: d }), [lunedi]);
 
   useEffect(() => {
@@ -126,7 +166,7 @@ export function useSettimana(lunedi: string | null) {
         // Se non si leggono (tabella non ancora creata) valgono i giorni soliti: l'errore esce solo spostando.
         spostate: s.data?.giorni ?? null,
       };
-      settimane.set(lunedi, letti);
+      tieniSettimana(lunedi, letti);
       setDati(letti);
     });
     return () => {
@@ -137,12 +177,12 @@ export function useSettimana(lunedi: string | null) {
   const salvaPasto = useCallback(
     async (giorno: string, pasto: PastoId, modifica: Partial<StatoPasto>) => {
       if (!lunedi) return;
-      const corrente = settimane.get(lunedi) ?? VUOTA;
+      const corrente = settimana(lunedi) ?? VUOTA;
       const k = chiavePasto(giorno, pasto);
       const prima: StatoPasto | undefined = corrente.pasti[k];
       const nuovo = { ...(prima ?? { ricetta: null, fatto: false, saltati: [] }), ...modifica };
       const next = { ...corrente, pasti: { ...corrente.pasti, [k]: nuovo } };
-      settimane.set(lunedi, next);
+      tieniSettimana(lunedi, next);
       setDati(next);
       const { error } = await createClient()
         .from("pasti")
@@ -155,13 +195,13 @@ export function useSettimana(lunedi: string | null) {
   const segnaAllenamento = useCallback(
     async (giorno: string) => {
       if (!lunedi) return;
-      const corrente = settimane.get(lunedi) ?? VUOTA;
+      const corrente = settimana(lunedi) ?? VUOTA;
       const fatto = corrente.allenamenti.includes(giorno);
       const next = {
         ...corrente,
         allenamenti: fatto ? corrente.allenamenti.filter((g) => g !== giorno) : [...corrente.allenamenti, giorno],
       };
-      settimane.set(lunedi, next);
+      tieniSettimana(lunedi, next);
       setDati(next);
       const sb = createClient();
       const { error } = fatto
@@ -176,12 +216,12 @@ export function useSettimana(lunedi: string | null) {
   const spostaSeduta = useCallback(
     async (da: string, a: string) => {
       if (!lunedi) return;
-      const corrente = settimane.get(lunedi) ?? VUOTA;
+      const corrente = settimana(lunedi) ?? VUOTA;
       const giorni = giorniSedute(lunedi, corrente.spostate)
         .map((g) => (g === da ? a : g))
         .sort();
       const next = { ...corrente, spostate: giorni };
-      settimane.set(lunedi, next);
+      tieniSettimana(lunedi, next);
       setDati(next);
       const { error } = await createClient()
         .from("sedute_spostate")
@@ -330,6 +370,7 @@ export function useSpesa() {
       .then(({ data, error }) => {
         if (error) return setErrore(error.message);
         spesaCache = Object.fromEntries(data.map((r) => [r.prodotto, r.stato as StatoSpesa]));
+        ricorda("spesa", spesaCache);
         setStato(spesaCache);
       });
   }, []);
@@ -342,6 +383,7 @@ export function useSpesa() {
       else delete next[prodotto];
     }
     spesaCache = next;
+    ricorda("spesa", next);
     setStato(next);
     const sb = createClient();
     const uid = await userId();
@@ -358,7 +400,10 @@ export function useSpesa() {
   return { stato, errore, imposta };
 }
 
-let scorteCache: Record<string, Scorta> | null = null;
+let scorteCache = ricordato<Record<string, Scorta>>("scorte");
+// Le ricette scelte e i cibi fuori pasto da cui si stimano le scorte (useScorte), come coppie chiave-valore.
+let scelteCache = ricordato<[string, StatoPasto][]>("scelte");
+let fuoriCache = ricordato<FuoriPasto[]>("fuori");
 
 async function leggiScorte() {
   const { data, error } = await createClient().from("scorte").select("prodotto,quantita,dal");
@@ -367,6 +412,7 @@ async function leggiScorte() {
     data.map((r) => [r.prodotto, { quantita: r.quantita, dal: r.dal }])
   );
   scorteCache = lette;
+  ricorda("scorte", lette);
   return lette;
 }
 
@@ -384,8 +430,8 @@ export function useManca(spesa: Record<string, StatoSpesa> | null, oggi: string 
  *  piano hanno usato da allora. "spesa" è lo stato di useSpesa: serve a sapere quali ricette usano i pasti. */
 export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpesa> | null) {
   const [scorte, setScorte] = useState(scorteCache);
-  const [scelte, setScelte] = useState<Map<string, StatoPasto> | null>(null);
-  const [fuori, setFuori] = useState<FuoriPasto[]>([]);
+  const [scelte, setScelte] = useState<Map<string, StatoPasto> | null>(() => scelteCache && new Map(scelteCache));
+  const [fuori, setFuori] = useState<FuoriPasto[]>(() => fuoriCache ?? []);
   const [errore, setErrore] = useState<string | null>(null);
   const manca = useMemo(() => mancaDa(spesa, scorte, adesso?.data ?? ""), [spesa, scorte, adesso?.data]);
 
@@ -402,9 +448,13 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
           sb.from("fuori_pasto").select("id,giorno,cibo,quando").gte("giorno", primo),
         ]);
         if (p.error) return setErrore(p.error.message);
-        setScelte(new Map(p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }])));
+        scelteCache = p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }]);
         // Senza la tabella (SQL non ancora eseguito) le scorte scendono solo coi pasti: l'errore lo mostra Oggi.
-        setFuori(f.data ?? []);
+        fuoriCache = f.data ?? [];
+        ricorda("scelte", scelteCache);
+        ricorda("fuori", fuoriCache);
+        setScelte(new Map(scelteCache));
+        setFuori(fuoriCache);
       })
       .catch((e: Error) => setErrore(e.message));
   }, []);
@@ -441,6 +491,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
     const next = { ...scorteCache };
     for (const [id, quantita] of Object.entries(nuove)) next[id] = { quantita, dal };
     scorteCache = next;
+    ricorda("scorte", next);
     setScorte(next);
     const uid = await userId();
     const { error } = await createClient()

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { preconnect } from "react-dom";
 import { CalendarDays, ChefHat, Dumbbell, House, ShoppingCart, UserRound } from "lucide-react";
 import { guidaDaRiaprire } from "@/components/Guida";
 import { leggiProfilo } from "@/lib/dati";
@@ -32,6 +33,8 @@ function pastoDaCucinare() {
 const nessunaIscrizione = () => () => {};
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
+  // Tutti i dati arrivano da Supabase: la connessione parte insieme alla pagina, non alla prima richiesta.
+  preconnect(process.env.NEXT_PUBLIC_SUPABASE_URL!, { crossOrigin: "anonymous" });
   const pathname = usePathname();
   const router = useRouter();
   // L'HTML statico è costruito col piano predefinito, il browser usa quello dell'utente (usaProfilo): le pagine si

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { leggiProfilo } from "@/lib/dati";
+import { dimenticaDati, leggiProfilo } from "@/lib/dati";
 import { usaProfilo } from "@/lib/piano";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,6 +31,7 @@ export default function LoginPage() {
     }
     // Il profilo di chi entra (piano e preferenze) si salva in questo browser, poi la pagina si ricarica: i moduli
     // ripartono con quello. Se non si legge, lo rilegge AppShell prima di disegnare.
+    dimenticaDati(); // quelli salvati qui sono di chi era collegato prima
     usaProfilo(await leggiProfilo().catch(() => null));
     location.replace("/");
   }

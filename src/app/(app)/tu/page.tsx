@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, BellOff, ChevronLeft, LogOut, Share } from "lucide-react";
 import { giorniSedute } from "@/lib/allenamento";
-import { chiavePasto, salvaPreferenze, useAdesso, useManca, useSettimana, useSpesa } from "@/lib/dati";
+import { chiavePasto, dimenticaDati, salvaPreferenze, useAdesso, useManca, useSettimana, useSpesa } from "@/lib/dati";
 import { aggiungiGiorni, dataBreve, lunediDi, oraValida, piano, profiloLocale, usaProfilo, type Preferenze } from "@/lib/piano";
 import { promemoriaDelGiorno } from "@/lib/promemoria";
 import { createClient } from "@/lib/supabase/client";
@@ -293,7 +293,9 @@ export default function Tu() {
 
   async function esci() {
     await createClient().auth.signOut();
-    usaProfilo(null); // chi entra dopo da questo browser non parte col piano di chi esce
+    // Chi entra dopo da questo browser non parte col piano né coi dati di chi esce.
+    usaProfilo(null);
+    dimenticaDati();
     router.replace("/login");
     router.refresh();
   }
