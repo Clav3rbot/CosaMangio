@@ -17,11 +17,12 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 
 <br>
 
-<img src="docs/schermate/oggi.png" width="160" alt="Oggi: il prossimo pasto e i pasti del giorno">
-<img src="docs/schermate/pasto.png" width="160" alt="Pasto: la ricetta proposta, le alternative e cosa non hai">
-<img src="docs/schermate/guida.png" width="160" alt="Guida: un passaggio della ricetta alla volta, con il timer in corso">
-<img src="docs/schermate/spesa.png" width="160" alt="Spesa: quando fare la prossima spesa e cosa comprare">
-<img src="docs/schermate/allenamento.png" width="160" alt="Allenamento: sedute della settimana e seduta guidata">
+<img src="docs/schermate/oggi.png" width="132" alt="Oggi: il prossimo pasto e i pasti del giorno">
+<img src="docs/schermate/pasto.png" width="132" alt="Pasto: la ricetta proposta, le alternative e cosa non hai">
+<img src="docs/schermate/guida.png" width="132" alt="Guida: un passaggio della ricetta alla volta, con il timer in corso">
+<img src="docs/schermate/spesa.png" width="132" alt="Spesa: quando arriva la consegna, entro quando ordinare e cosa comprare">
+<img src="docs/schermate/allenamento.png" width="132" alt="Allenamento: sedute della settimana e seduta guidata">
+<img src="docs/schermate/tu.png" width="132" alt="Tu: gli orari dei pasti e degli avvisi, ognuno col suo interruttore, e la consegna della spesa">
 
 <sub>Le schermate usano il piano d'esempio, inventato.</sub>
 
@@ -31,7 +32,7 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 > phone's home screen: the meal of the moment with step-by-step cooking timers, recipes that rotate week by week,
 > the weekly shopping list and pantry, and push notifications. Everyone hosts their own copy (Supabase + Vercel)
 > with their own plan, written in a single Python file that an AI agent can fill in from a questionnaire. A
-> household can share one copy: each user gets their own plan at login.
+> household can share one copy: each user gets their own plan, meal times and reminders at login.
 > **The interface and the docs are in Italian.** MIT license. Not medical advice.
 
 ## Cosa fa
@@ -43,14 +44,17 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 - ⏱️ **Cucina passo per passo.** Un passaggio alla volta, a schermo intero e con lo schermo sempre acceso. Ogni
   "20 minuti" scritto nella ricetta diventa un timer, e ne puoi far girare più di uno.
 - 🛒 **Spesa e scorte.** L'app sa cosa hai in casa, ti dice cosa comprare per la settimana e quando fare la
-  prossima spesa. Se manca qualcosa, propone una ricetta che puoi fare con quello che hai.
+  prossima spesa. Se le dici quando arriva la consegna, ti ricorda di ordinare e ti avvisa se qualcosa finisce
+  prima. Se manca qualcosa, propone una ricetta che puoi fare con quello che hai.
 - 🔔 **Notifiche.** Quando iniziare a cucinare, cosa spostare dal freezer al frigo la sera prima, quando
   allenarti.
+- ⚙️ **Orari tuoi.** L'ora di ogni pasto e di ogni avviso la cambi dall'app, e ogni avviso ha il suo
+  interruttore. In vacanza metti il piano in pausa: niente avvisi, e le scorte restano ferme.
 - 💪 **Allenamento, se vuoi.** Le sedute della settimana, da spostare con un tocco, e la seduta guidata con i
   timer.
 - 📱 **Un'app sulla Home.** Si installa dal browser, anche su iPhone, e si apre come un'app.
 - 🔒 **Solo vostra.** Ognuno ospita la sua copia, senza registrazione aperta. In casa la stessa copia può servire
-  più persone, ognuna col suo piano: lo sceglie il login.
+  più persone, ognuna col suo piano e i suoi orari: li sceglie il login.
 
 ## Il tuo piano
 
@@ -115,12 +119,18 @@ e orari (pagina Tu) restano di ognuno.
 - **Rotazione.** Per ogni pasto il piano ha un piatto e le sue alternative. La settimana di `INIZIO` propone il
   piatto del piano, poi le alternative girano una settimana dopo l'altra. Una scelta fatta a mano vince sempre.
 - **Scorte.** Quando arriva la spesa la segni come arrivata, oppure carichi il documento di consegna (vedi i
-  limiti). L'app toglie da lì quello che usano i pasti del piano e ti dice cosa comprare e quando.
+  limiti). L'app toglie da lì quello che usano i pasti del piano e ti dice cosa comprare e quando. Oggi conta
+  l'orario dei pasti; nei giorni passati in cui ne hai segnato almeno uno, quelli non segnati valgono come saltati.
+  Di quello che si conserva compri la quantità fissa della lista, che copre la settimana più pesante della
+  rotazione; dei freschi quello che usano i piatti dei 7 giorni dopo la consegna.
+- **Profilo.** Per ogni utente la tabella `profili` dice quale piano segue e le sue preferenze: orari, avvisi
+  spenti, consegna della spesa, pause. Le preferenze si cambiano dalla pagina Tu e valgono sopra il piano.
 - **Guida.** Passo e timer sopravvivono alla chiusura dell'app (`localStorage`), come il contatore dell'acqua.
 - **Notifiche.** Ogni 5 minuti Supabase chiama `POST /api/push/tick`. Per ogni pasto la notifica arriva quando
   devi iniziare a cucinare, cioè all'orario del pasto meno i minuti della ricetta; per il primo pasto della
-  giornata, all'ora del pasto. Alle 22:30 arriva il promemoria per il freezer e, nei giorni di allenamento, uno
-  all'ora della seduta. Per provarle senza inviare nulla, con un'ora simulata nel fuso del piano:
+  giornata, all'ora del pasto. La sera (alle 22:30, se non cambi l'ora) arriva il promemoria per il freezer; nei
+  giorni di allenamento uno all'ora della seduta; il giorno prima della consegna quello per ordinare la spesa.
+  In pausa non parte niente. Per provarle senza inviare nulla, con un'ora simulata nel fuso del piano:
 
   ```powershell
   curl.exe -X POST -H "Authorization: Bearer <CRON_SECRET>" "http://localhost:3000/api/push/tick?dry=1&at=2026-01-05T12:30"
@@ -131,6 +141,10 @@ e orari (pagina Tu) restano di ognuno.
 Se tieni la tua copia in un fork, rispetto a questo repo cambiano solo `piano/<nome>.py` e
 `src/data/piano.json`. Quando prendi gli aggiornamenti e il merge va in conflitto su `src/data/piano.json`, non
 risolverlo a mano: rigeneralo dal tuo piano con il comando sopra.
+
+Dalla 1.0.0 alla 1.0.1: esegui `supabase/migrazioni/profili.sql` nel SQL Editor prima di pubblicare. Se usavi la
+variabile `PIANI`, scrivi nella tabella `profili` una riga per ognuno di quegli utenti (il comando è nel file),
+poi toglila.
 
 Una ricetta o un prodotto rinominati quando l'app è già in uso perdono i dati salvati (pasti segnati, scorte),
 perché i dati su Supabase puntano al loro nome.
