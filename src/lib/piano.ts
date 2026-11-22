@@ -18,6 +18,8 @@ export type Ricetta = {
   /** Fuori dalla rotazione e dalla spesa fissa: proposta solo se manca un prodotto. */
   ripiego?: boolean;
   nota?: string;
+  /** Prodotto -> sostituti in questo piatto, al posto di quelli della voce di spesa; [] = qui nessuno. */
+  sostituti?: Record<string, string[]>;
 };
 export type Esercizio = { nome: string; dettaglio: string; secondi?: number };
 export type Allenamento = {
@@ -55,6 +57,8 @@ export type VoceSpesa = {
   sgocciolato?: boolean;
   /** Dura pochi giorni: l'avanzo non vale per la spesa dopo. */
   fresco?: boolean;
+  /** Prodotti simili, in ordine: se manca e ne hai uno, usi quello, stessa quantità. Una ricetta può dire i suoi. */
+  sostituti?: string[];
 };
 export type Cibo = {
   id: string;
@@ -207,16 +211,32 @@ export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
   return { kcal: Math.max(0, Math.round(kcal)), prot: Math.max(0, Math.round(prot)), prodotti };
 }
 
+/** Il primo sostituto che hai di un prodotto della ricetta che manca. */
+export const sostitutoDi = (r: Ricetta, id: string, manca: (id: string) => boolean) =>
+  manca(id) ? (r.sostituti?.[id] ?? voci.get(id)?.sostituti)?.find((s) => !manca(s)) : undefined;
+
+const senzaRimedio = (r: Ricetta, manca: (id: string) => boolean) => (id: string) =>
+  manca(id) && !sostitutoDi(r, id, manca);
+
 export const daScongelare = (r: Ricetta, manca: (id: string) => boolean = () => false) =>
   Object.keys(r.prodotti).flatMap((id) => {
-    const nome = voci.get(id)?.scongela;
-    return nome && !manca(id) ? [nome] : [];
+    const usi = sostitutoDi(r, id, manca) ?? id;
+    const nome = voci.get(usi)?.scongela;
+    return nome && !manca(usi) ? [nome] : [];
   });
 
+/** Quello che manca e non ha un sostituto in casa. */
 export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean) =>
   Object.keys(r.prodotti)
-    .filter(manca)
+    .filter(senzaRimedio(r, manca))
     .map((id) => voci.get(id)!.nome.toLowerCase());
+
+/** [ingrediente che manca, com'è scritto nella ricetta, e cosa usi al suo posto]. */
+export const sostituzioniDi = (r: Ricetta, manca: (id: string) => boolean) =>
+  r.ingredienti.flatMap(([nome], i): [string, string][] => {
+    const s = sostitutoDi(r, r.valori[i].prodotto ?? "", manca);
+    return s ? [[nome, voci.get(s)!.nome.toLowerCase()]] : [];
+  });
 
 export const ricettaValida = (pasto: PastoId, id: string) => !!perPasto.get(pasto)?.has(id);
 
@@ -263,7 +283,7 @@ export function pastiDelGiorno(data: string) {
   });
 }
 
-/** Ruota ogni lunedì; se manca qualcosa, il primo fattibile dopo, meglio se con lo stesso scongelato. */
+/** Ruota ogni lunedì; se manca qualcosa senza sostituto, il primo fattibile dopo, meglio se con lo stesso scongelato. */
 export function ricettaProposta(data: string, opzioni: string[], manca: (id: string) => boolean = () => false) {
   // I piatti fuori casa si scelgono a mano, salvo che il pasto abbia solo quelli.
   const cucinati = opzioni.filter((id) => !piano.ricette[id].fuori);
@@ -272,7 +292,7 @@ export function ricettaProposta(data: string, opzioni: string[], manca: (id: str
   const settimana = Math.floor((utc(data).getTime() - utc(piano.inizio).getTime()) / (7 * 86400000));
   const k = ((settimana % rotazione.length) + rotazione.length) % rotazione.length;
   const ordine = [...rotazione.slice(k), ...rotazione.slice(0, k), ...giro.filter((id) => piano.ricette[id].ripiego)];
-  const puoi = ordine.filter((id) => !Object.keys(piano.ricette[id].prodotti).some(manca));
+  const puoi = ordine.filter((id) => !Object.keys(piano.ricette[id].prodotti).some(senzaRimedio(piano.ricette[id], manca)));
   const freezer = (id: string) => daScongelare(piano.ricette[id]).sort().join();
   return puoi.find((id) => freezer(id) === freezer(rotazione[k])) ?? puoi[0] ?? rotazione[k];
 }

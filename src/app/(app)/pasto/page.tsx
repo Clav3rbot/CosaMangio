@@ -24,6 +24,7 @@ import {
   ricettaProposta,
   senzaSaltati,
   sorelleDi,
+  sostituzioniDi,
   type PastoId,
 } from "@/lib/piano";
 import { ricettaDi } from "@/lib/promemoria";
@@ -77,6 +78,9 @@ function Pasto() {
   // Fissa la ricetta: non cambia più se poi cambia quello che hai.
   const segna = (mangiato: boolean) => salva(mangiato ? { fatto: true, ricetta: rid } : { fatto: false });
   const nonHai = mancantiDi(r, manca);
+  const note = Object.fromEntries(
+    sostituzioniDi(r, manca).map(([nome, usa]) => [nome, `Non ce l'hai: usa ${usa}, stessa quantità`])
+  );
   // Una ricetta arrivata da uno scambio non è fra le opzioni del giorno.
   const opzioni = slot.opzioni.includes(rid) ? slot.opzioni : [...new Set([rid, ...sorelleDi(slot.id, rid), ...slot.opzioni])];
 
@@ -106,6 +110,7 @@ function Pasto() {
     <Ingredienti
       voci={r.ingredienti}
       grande
+      note={note}
       saltati={pronti}
       onTocca={(nome) => setPronti(pronti.includes(nome) ? pronti.filter((n) => n !== nome) : [...pronti, nome])}
     />
@@ -254,7 +259,7 @@ function Pasto() {
       <p className="-mt-1 mb-2 px-1 text-sm text-muted">
         Tocca quello che non mangi: esce dalle calorie e resta nelle scorte.
       </p>
-      <Ingredienti key={rid} voci={r.ingredienti} saltati={saltati} onTocca={salta} />
+      <Ingredienti key={rid} voci={r.ingredienti} note={note} saltati={saltati} onTocca={salta} />
 
       {r.passi.length > 0 && (
         <>

@@ -76,11 +76,14 @@ REPARTI = (FRUTTA, PANE, FRIGO, CARNE, SURGELATI, DISPENSA)
 # pezzo). pezzo: grammi di un pezzo, per contare a pezzi un prodotto che le ricette pesano. fresco: l'avanzo non vale
 # per la spesa dopo. sgocciolato: conf è il peso sgocciolato. tieni/congela: all'arrivo si porziona e si congela.
 # scongela: sta in freezer, l'avviso della sera prima lo nomina così. una_confezione: in freezer ne entra una.
+# sostituti: prodotti simili, in ordine: se questo manca e ne hai uno, la ricetta resta proposta con quello.
+# Una ricetta può dire i suoi: sostituti={"mele": ["banane"]}.
 PRODOTTI = {
     "banane": dict(reparto=FRUTTA, nome="Banane", conf=720, conf_nome="casco da 6", pezzo=120, fresco=True),
     "mele": dict(reparto=FRUTTA, nome="Mele", conf=900, conf_nome="sacchetto da 6", pezzo=150),
     "pomodori": dict(reparto=FRUTTA, nome="Pomodori", conf=500, conf_nome="vaschetta da 500 g", fresco=True),
-    "insalata": dict(reparto=FRUTTA, nome="Insalata", conf=250, conf_nome="busta da 250 g", fresco=True),
+    "insalata": dict(reparto=FRUTTA, nome="Insalata", conf=250, conf_nome="busta da 250 g", fresco=True,
+                     sostituti=["pomodori"]),
     "patate": dict(reparto=FRUTTA, nome="Patate", conf=1000, conf_nome="sacchetto da 1 kg"),
     "pane": dict(reparto=PANE, nome="Pane integrale", conf=500, conf_nome="pagnotta da 500 g",
                  tieni="fuori, nel sacchetto", congela="a fette", scongela="pane", una_confezione=True),
@@ -164,7 +167,7 @@ RICETTE = [
     dict(nome="Pizza", minuti=0, fuori=True,
          ingredienti=[("Pizza margherita", 1)],
          nota="Fuori casa, niente da cucinare: goditela."),
-    dict(nome="Yogurt e mela", minuti=0,
+    dict(nome="Yogurt e mela", minuti=0, sostituti={"mele": ["banane"]},
          ingredienti=[("Yogurt greco 0%", 150), ("Mela", 150)]),
     dict(nome="Pane e grana", minuti=0,
          ingredienti=[("Pane integrale", 40), ("Grana Padano", 20)]),

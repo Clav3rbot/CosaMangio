@@ -8,11 +8,14 @@ export default function Ingredienti({
   grande = false,
   saltati,
   onTocca,
+  note,
 }: {
   voci: [string, string][];
   grande?: boolean;
   saltati?: string[];
   onTocca?: (nome: string) => void;
+  /** Nome dell'ingrediente -> riga sotto il nome. */
+  note?: Record<string, string>;
 }) {
   const [pronti, setPronti] = useState<string[]>([]);
   const segnati = saltati ?? pronti;
@@ -32,7 +35,10 @@ export default function Ingredienti({
                 segnato ? "text-muted line-through" : ""
               }`}
             >
-              <span>{nome}</span>
+              <span>
+                {nome}
+                {note?.[nome] && <span className="block text-xs font-medium text-carb">{note[nome]}</span>}
+              </span>
               <span className="shrink-0 font-semibold">{qta}</span>
             </button>
           </li>

@@ -111,6 +111,7 @@ PRODOTTI = {
 | `sgocciolato=True` | `conf` è il peso sgocciolato (legumi, tonno) |
 | `tieni`, `congela` | all'arrivo si porziona e si congela: dove resta quello di oggi e domani, e come congelarlo se non a porzioni dei pasti ("a fette") |
 | `scongela` | sta in freezer: la sera prima l'app avvisa di spostarlo in frigo, con questo nome breve |
+| `sostituti=["cetrioli", "pomodori"]` | prodotti simili, in ordine: se questo manca e ne hai uno, l'app propone lo stesso la ricetta e dice di usare quello, nella stessa quantità (quindi stessa unità: grammi con grammi, pezzi con pezzi) |
 | `una_confezione=True` | in freezer ne entra una a settimana: le alternative che ne usano di più non fanno comprare di più (il motore dice quanto manca) |
 
 Ogni prodotto deve essere usato da almeno una ricetta della settimana.
@@ -136,6 +137,7 @@ RICETTE = [
 | `nota` | facoltativa: una frase nella pagina del pasto |
 | `fuori=True` | si mangia fuori casa (pizza, pasto libero, pranzo al bar): niente da cucinare, la rotazione non lo propone al posto di un piatto di casa |
 | `ripiego=True` | per quando manca un prodotto: l'app lo propone solo allora, e non conta nella spesa |
+| `sostituti` | in questo piatto, al posto dei `sostituti` del prodotto: `sostituti={"finocchi": ["insalata"]}`; `[]` = qui non si sostituisce (è cotto dentro il piatto) |
 | `toglie` | ingredienti di un altro pasto dello stesso giorno che con questa ricetta si saltano: `toglie=[("Mela", 150)]` |
 | `pdf`, `titolo_pdf` | facoltativi: la ricetta va nella pagina "Varianti sfiziose" del PDF; `pdf` dice al posto di cosa |
 

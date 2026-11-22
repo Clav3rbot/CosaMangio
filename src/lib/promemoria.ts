@@ -10,6 +10,7 @@ import {
   piano,
   ricettaProposta,
   ricettaValida,
+  sostituzioniDi,
   type PastoId,
 } from "@/lib/piano";
 
@@ -52,7 +53,10 @@ export function promemoriaDelGiorno(
       titolo: cucina ? `Inizia a cucinare: ${p.nome.toLowerCase()} alle ${p.ora}` : `${p.nome} · ${p.ora}`,
       testo:
         (r.minuti && !r.fuori ? `${r.nome} · ${r.minuti} min` : r.nome) +
-        (nonHai.length ? ` · Non hai: ${nonHai.join(", ")}` : ""),
+        (nonHai.length ? ` · Non hai: ${nonHai.join(", ")}` : "") +
+        sostituzioniDi(r, manca)
+          .map(([a, b]) => ` · Niente ${a.toLowerCase()}: usa ${b}`)
+          .join(""),
       url: `/pasto?d=${data}&p=${p.id}`,
     });
   }

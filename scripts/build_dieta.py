@@ -23,8 +23,9 @@ FACOLTATIVI = {"TITOLO": "Piano alimentare", "SOTTOTITOLO": "", "FUSO": "Europe/
                "PROVE_SCONTRINO": [], "ARTICOLI": {}}
 CAMPI_ALIMENTO = {"kcal", "prot", "a_pezzo", "prodotto", "come"}
 CAMPI_PRODOTTO = {"reparto", "nome", "conf", "conf_nome", "pezzo", "fresco", "sgocciolato", "tieni", "congela",
-                  "scongela", "una_confezione"}
-CAMPI_RICETTA = {"nome", "minuti", "ingredienti", "passi", "nota", "fuori", "ripiego", "toglie", "pdf", "titolo_pdf"}
+                  "scongela", "una_confezione", "sostituti"}
+CAMPI_RICETTA = {"nome", "minuti", "ingredienti", "passi", "nota", "fuori", "ripiego", "toglie", "pdf", "titolo_pdf",
+                 "sostituti"}
 
 
 class ErrorePiano(Exception):
@@ -154,6 +155,17 @@ def unita_prodotti(p):
         v["a_pezzo"] = a_pezzo == {True}
         controlla(not (v["a_pezzo"] and v.get("pezzo")),
                   f"PRODOTTI, '{chiave}': 'pezzo' (grammi di un pezzo) vale solo per i prodotti pesati a grammi")
+    # Dopo il giro sopra: serve l'unità di tutti.
+    for chiave, v in p.prodotti.items():
+        controlla_sostituti(p, "PRODOTTI", chiave, v.get("sostituti", ()))
+
+
+def controlla_sostituti(p, dove, chiave, sostituti):
+    """Il sostituto prende la stessa quantità, quindi serve la stessa unità."""
+    for s in sostituti:
+        controlla(s in p.prodotti and s != chiave, f"{dove}, '{chiave}': il sostituto '{s}' non è un altro prodotto")
+        controlla(p.prodotti[s]["a_pezzo"] == p.prodotti[chiave]["a_pezzo"],
+                  f"{dove}, '{chiave}': il sostituto '{s}' si conta in un'altra unità (pezzi e grammi)")
 
 
 def leggi_ingredienti(p, voci, dove, campo):
@@ -197,6 +209,12 @@ def leggi_ricette(p):
             "pdf": r.get("pdf"), "titolo_pdf": r.get("titolo_pdf"),
         }
         controlla(numero(ricette[nome]["minuti"]), f"{nome}: minuti deve essere un numero")
+        sostituti = r.get("sostituti", {})
+        controlla(isinstance(sostituti, dict), f"{nome}: sostituti deve essere {{prodotto: [prodotti]}}")
+        for chiave, lista in sostituti.items():
+            controlla(chiave in prodotti_di(p, ricette[nome]), f"{nome}: sostituti, la ricetta non usa '{chiave}'")
+            controlla_sostituti(p, nome, chiave, lista)
+        ricette[nome]["sostituti"] = {chiave: list(lista) for chiave, lista in sostituti.items()}
     return ricette
 
 
@@ -305,6 +323,8 @@ def righe_spesa(p):
         for campo in ("tieni", "congela", "scongela"):
             if v.get(campo):
                 row[campo] = v[campo]
+        if v.get("sostituti"):
+            row["sostituti"] = list(v["sostituti"])
         rows.append(row)
     return rows
 
@@ -353,6 +373,8 @@ def ricetta_json(p, r):
         out["ripiego"] = True
     if r["nota"]:
         out["nota"] = r["nota"]
+    if r["sostituti"]:
+        out["sostituti"] = r["sostituti"]
     # L'app li sottrae quando segni un ingrediente come non mangiato.
     out["valori"] = []
     for nome, q, _ in r["ingredienti"]:

@@ -7,7 +7,8 @@ const percorso = (p) => fileURLToPath(new URL(p, import.meta.url));
 const jiti = createJiti(import.meta.url, {
   alias: { "@/data/piano.json": percorso("../piano/esempio.json"), "@": percorso("../src") },
 });
-const { piano, pastiDelGiorno, senzaSaltati, sorelleDi, timerNelPasso } = await jiti.import("../src/lib/piano.ts");
+const { piano, mancantiDi, pastiDelGiorno, senzaSaltati, sorelleDi, sostituzioniDi, timerNelPasso } =
+  await jiti.import("../src/lib/piano.ts");
 const { interpretaLinee, prodottoRiga, quantitaRiga } = await jiti.import("../src/lib/scontrino.ts");
 const { consumoFra, consumoFuoriPasto, confezioniDaComprare, contaPerSpesa, mancaDa, primaMancanza, quantoMostrare, GIORNI_FRESCO } =
   await jiti.import("../src/lib/scorte.ts");
@@ -194,6 +195,32 @@ for (let i = 0; i < 8 * 7; i++) {
   const d = new Date(Date.parse(piano.inizio) + i * 86_400_000).toISOString().slice(0, 10);
   for (const p of pastiDelGiorno(d)) assert.ok(!piano.ricette[ricettaDi(d, p, nessuna)].ripiego, `${d} ${p.id}`);
 }
+// --- Sostituti ---
+// Manca l'insalata ma ci sono i pomodori: niente "Non hai", la ricetta dice cosa usare.
+const conInsalata = piano.ricette["pollo-alla-piastra-con-insalata"];
+assert.deepEqual(mancantiDi(conInsalata, nonHo), []);
+assert.deepEqual(sostituzioniDi(conInsalata, nonHo), [["Insalata", "pomodori"]]);
+const cenaLunedi = promemoriaDelGiorno("2026-01-05", nessuna, false, nonHo).find((p) => p.chiave === "cena");
+assert.ok(cenaLunedi.testo.endsWith(" · Niente insalata: usa pomodori"), cenaLunedi.testo);
+// Le scorte scendono dal sostituto.
+const lunediSera = [{ data: "2026-01-05", minuti: 19 * 60 }, { data: "2026-01-05", minuti: 23 * 60 }];
+assert.deepEqual(consumoFra(...lunediSera, nessuna, nonHo), { pollo: 180, pomodori: 100, pane: 80 });
+// Finito anche il sostituto: torna "Non hai".
+const nienteVerdura = (id) => id === "insalata" || id === "pomodori";
+assert.deepEqual(mancantiDi(conInsalata, nienteVerdura), ["insalata"]);
+assert.deepEqual(sostituzioniDi(conInsalata, nienteVerdura), []);
+assert.deepEqual(consumoFra(...lunediSera, nessuna, nienteVerdura), { pollo: 180, insalata: 100, pane: 80 });
+// La ricetta dice i suoi: nello yogurt la banana al posto della mela; [] = in questo piatto niente sostituto.
+const senzaMele = (id) => id === "mele";
+assert.deepEqual(sostituzioniDi(piano.ricette["yogurt-e-mela"], senzaMele), [["Mela", "banane"]]);
+const soloInsalata = { ...conInsalata, sostituti: { insalata: [] } };
+assert.deepEqual(mancantiDi(soloInsalata, nonHo), ["insalata"]);
+assert.deepEqual(sostituzioniDi(soloInsalata, nonHo), []);
+// Insalata finita e pomodori in casa: la spesa non serve lunedì sera per l'insalata, serve quando finiscono i pomodori.
+const senzaInsalata = { ...tutto, insalata: { quantita: 0, dal }, pomodori: { quantita: 250, dal } };
+const perInsalata = primaMancanza(sera, {}, senzaInsalata, quanti(senzaInsalata), nessuna);
+assert.deepEqual([perInsalata.data, perInsalata.pasto], ["2026-01-07", "pranzo"]);
+assert.ok(perInsalata.prodotti.includes("pomodori"));
 // I pasti sono facoltativi: nel fine settimana niente merenda.
 assert.deepEqual(pastiDelGiorno("2026-01-10").map((p) => p.id), ["colazione", "pranzo", "cena"]);
 // Un pasto arrivato da uno scambio porta con sé le sue alternative.

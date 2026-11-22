@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Check, ChevronLeft, ChevronRight, PackageX } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, PackageX, Replace } from "lucide-react";
 import Barre from "@/components/Barre";
 import IconaPasto from "@/components/IconaPasto";
 import Mese from "@/components/Mese";
@@ -17,6 +17,7 @@ import {
   mancantiDi,
   piano,
   senzaSaltati,
+  sostituzioniDi,
 } from "@/lib/piano";
 
 const LETTERE = ["L", "M", "M", "G", "V", "S", "D"];
@@ -136,6 +137,10 @@ export default function Settimana() {
                       ) : mancantiDi(p.ricetta, manca).length ? (
                         <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-fat">
                           <PackageX className="h-4 w-4" /> manca
+                        </span>
+                      ) : sostituzioniDi(p.ricetta, manca).length ? (
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-carb">
+                          <Replace className="h-4 w-4" /> sostituto
                         </span>
                       ) : (
                         p.opzioni.length > 1 && <span className="shrink-0 text-xs text-muted">{p.opzioni.length} ricette</span>

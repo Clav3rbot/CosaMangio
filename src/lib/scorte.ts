@@ -7,6 +7,7 @@ import {
   piano,
   prossimaConsegna,
   senzaSaltati,
+  sostitutoDi,
   type PastoId,
   type VoceSpesa,
 } from "@/lib/piano";
@@ -53,8 +54,11 @@ export function consumoFra(
       const m = minutiDa(p.ora);
       if ((d === da.data && m <= da.minuti) || (d === a.data && m > a.minuti)) continue;
       if (soloSegnati && !fatto(d, p.id)) continue;
-      const { prodotti } = senzaSaltati(piano.ricette[ricettaDi(d, p, scelta, manca)], saltati?.(d, p.id));
-      for (const [id, q] of Object.entries(prodotti)) tot[id] = (tot[id] ?? 0) + q;
+      const r = piano.ricette[ricettaDi(d, p, scelta, manca)];
+      for (const [id, q] of Object.entries(senzaSaltati(r, saltati?.(d, p.id)).prodotti)) {
+        const usi = (manca && sostitutoDi(r, id, manca)) ?? id;
+        tot[usi] = (tot[usi] ?? 0) + q;
+      }
     }
   }
   return tot;
@@ -86,8 +90,9 @@ export function primaMancanza(
       if (r.fuori) continue;
       for (const [id, q] of Object.entries(senzaSaltati(r, saltati?.(d, p.id)).prodotti)) {
         if (q <= 0) continue;
-        if (manca(id) || (id in resta && resta[id] < q / 4)) finiti.add(id);
-        if (id in resta) resta[id] = Math.max(0, resta[id] - q);
+        const usi = sostitutoDi(r, id, manca) ?? id;
+        if (manca(usi) || (usi in resta && resta[usi] < q / 4)) finiti.add(usi);
+        if (usi in resta) resta[usi] = Math.max(0, resta[usi] - q);
       }
       if (finiti.size) primo ??= { data: d, pasto: p.id };
     }
