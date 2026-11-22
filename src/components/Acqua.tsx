@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Droplet } from "lucide-react";
 
+const GOCCIA = "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 10.1 5 12 5 15a7 7 0 0 0 7 7z";
+
 // 8 bicchieri da 250 ml: i 2 litri al giorno del piano.
 const BICCHIERI = 8;
 
@@ -18,10 +20,12 @@ function leggi(giorno: string) {
 
 /** Va montato con key={giorno}: il conto si legge una volta sola, all'apertura. */
 export default function Acqua({ giorno }: { giorno: string }) {
-  const [bevuti, setBevuti] = useState(() => leggi(giorno));
+  // prima: i bicchieri cambiati partono in fila da lì.
+  const [{ bevuti, prima }, setConto] = useState(() => ({ bevuti: leggi(giorno), prima: leggi(giorno) }));
+  const attesa = (k: number) => 40 * (bevuti > prima ? k - prima : prima - 1 - k);
 
   const imposta = (n: number) => {
-    setBevuti(n);
+    setConto({ bevuti: n, prima: bevuti });
     try {
       localStorage.setItem(`acqua:${giorno}`, String(n));
     } catch {
@@ -50,7 +54,10 @@ export default function Acqua({ giorno }: { giorno: string }) {
               k < bevuti ? "bg-prot text-accent-ink" : "bg-bg text-muted"
             }`}
           >
-            <Droplet className="h-5 w-5" fill={k < bevuti ? "currentColor" : "none"} />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" aria-hidden className="h-5 w-5">
+              <path className="goccia-piena" d={GOCCIA} fill="currentColor" style={{ transitionDelay: `${Math.max(0, attesa(k))}ms` }} />
+              <path d={GOCCIA} />
+            </svg>
           </button>
         ))}
       </div>

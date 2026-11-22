@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Apple, ChefHat, ChevronRight, Dumbbell, Flame, Minus, Plus, Snowflake, Target, UserRound } from "lucide-react";
 import Acqua from "@/components/Acqua";
+import Anelli from "@/components/Anelli";
+import Cifre from "@/components/Cifre";
 import Anello from "@/components/Anello";
 import IconaPasto from "@/components/IconaPasto";
 import BottoneFatto from "@/components/BottoneFatto";
@@ -193,20 +195,24 @@ function Oggi() {
             <p className="text-xs text-muted">obiettivo</p>
           </div>
         </div>
-        <div className="-mt-8 flex justify-center">
-          <Anello valore={kcalTot ? kcalFatte / kcalTot : 0}>
-            <span className="text-4xl font-bold">{Math.max(0, kcalTot - kcalFatte)}</span>
+        <div className="-mt-8">
+          <Anelli
+            pronto={!!dati && fuori.letto}
+            anelli={[
+              { nome: "kcal", valore: kcalFatte, totale: kcalTot, colore: "var(--accent)", legenda: false },
+              { nome: "proteine", valore: protFatte, totale: protTot, colore: "var(--prot)", unita: " g" },
+              { nome: "pasti", valore: fatti, totale: pasti.length, colore: "var(--carb)" },
+              ...(piano.allenamento
+                ? [{ nome: "allenamenti", valore: sedute, totale: piano.allenamento.giorni.length, colore: "var(--fat)" }]
+                : []),
+            ]}
+          >
+            <span className="text-4xl font-bold">
+              <Cifre valore={Math.max(0, kcalTot - kcalFatte)} />
+            </span>
             <span className="text-sm text-muted">kcal da mangiare</span>
-          </Anello>
+          </Anelli>
         </div>
-      </section>
-
-      <section className={`mt-3 grid gap-3 ${piano.allenamento ? "grid-cols-3" : "grid-cols-2"}`} aria-label="Riepilogo">
-        <Riquadro colore="var(--prot)" nome="proteine" valore={protFatte} totale={protTot} unita=" g" />
-        <Riquadro colore="var(--carb)" nome="pasti" valore={fatti} totale={pasti.length} />
-        {piano.allenamento && (
-          <Riquadro colore="var(--fat)" nome="allenamenti" valore={sedute} totale={piano.allenamento.giorni.length} />
-        )}
       </section>
 
       {eOggi && <Acqua key={giorno} giorno={giorno} />}
@@ -332,38 +338,5 @@ function Oggi() {
         </Link>
       )}
     </>
-  );
-}
-
-function Riquadro({
-  colore,
-  nome,
-  valore,
-  totale,
-  unita = "",
-}: {
-  colore: string;
-  nome: string;
-  valore: number;
-  totale: number;
-  unita?: string;
-}) {
-  return (
-    <div className="card p-3">
-      <p className="flex items-center gap-1.5 text-xs text-muted">
-        <span className="h-2 w-2 rounded-full" style={{ background: colore }} />
-        {nome}
-      </p>
-      <div className="mt-2 h-1.5 rounded-full bg-line">
-        <div
-          className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${totale ? Math.min(100, (valore / totale) * 100) : 0}%`, background: colore }}
-        />
-      </div>
-      <p className="mt-1.5 text-sm font-semibold">
-        {valore}/{totale}
-        {unita}
-      </p>
-    </div>
   );
 }

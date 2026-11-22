@@ -110,6 +110,324 @@ dialog::backdrop {
   overscroll-behavior: contain;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .anello-riempi {
+    animation: anello-riempi 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .barra-cresce {
+    animation: barra-cresce 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .fascia-entra {
+    animation: comparsa 420ms ease-out 900ms backwards;
+  }
+  .barra-oggi::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: max(55%, 36px);
+    background: linear-gradient(to top, transparent 10%, rgb(255 255 255 / 0.4) 50%, transparent 90%);
+    animation: barra-riflesso 2.4s ease-in-out 1.2s 3 both;
+  }
+  .cella-entra {
+    animation: cella-entra 450ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .punto-entra {
+    animation: punto-entra 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+  .lancetta-entra {
+    animation: comparsa 400ms ease-out 1100ms backwards;
+  }
+  .adesso-pulsa {
+    animation: adesso-pulsa 2s ease-out 1.5s infinite;
+  }
+}
+/* Opacità 0 in attesa: a lunghezza zero il tratto tondo lascerebbe un punto. */
+@keyframes anello-riempi {
+  0% {
+    stroke-dashoffset: var(--giro);
+    opacity: 0;
+  }
+  1% {
+    opacity: var(--visibile, 1);
+  }
+}
+.punto-entra,
+.adesso-pulsa {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.adesso-pulsa {
+  opacity: 0;
+}
+@keyframes adesso-pulsa {
+  from {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  80%,
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes cella-entra {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.86);
+  }
+}
+@keyframes punto-entra {
+  from {
+    transform: scale(0);
+  }
+}
+/* height, non scaleY: le estremità tonde non si schiacciano. */
+@keyframes barra-cresce {
+  from {
+    height: 0;
+  }
+}
+@keyframes comparsa {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes barra-riflesso {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(-200%);
+  }
+}
+
+/* In components: le utility di Tailwind restano più forti. */
+@layer components {
+  .lucide-chevron-left {
+    --gesto: translateX(-3px);
+  }
+  .lucide-chevron-right {
+    --gesto: translateX(3px);
+  }
+  .lucide-plus,
+  .lucide-x {
+    --gesto: rotate(90deg);
+  }
+  .lucide-minus {
+    --gesto: scaleX(0.6);
+  }
+  .lucide-log-out {
+    --gesto: translateX(3px);
+  }
+  .lucide-share,
+  .lucide-house,
+  .lucide-user-round,
+  .lucide-package-check,
+  .lucide-package-x {
+    --gesto: translateY(-3px);
+  }
+  .lucide-play {
+    --gesto: translateX(2px) scale(1.1);
+  }
+  .lucide-arrow-left-right {
+    --gesto: scaleX(-1);
+  }
+  .lucide-list-filter {
+    --gesto: scaleX(0.75);
+  }
+  .lucide-file-text {
+    --gesto: translateY(-2px) rotate(-8deg);
+  }
+  /* Sei bracci: un sesto di giro torna uguale. */
+  .lucide-snowflake {
+    --gesto: rotate(60deg);
+  }
+  .lucide-chef-hat {
+    --gesto: rotate(-12deg);
+  }
+  .lucide-bell,
+  .lucide-bell-off {
+    --gesto: rotate(14deg);
+    transform-origin: 50% 10%;
+  }
+  .lucide-calendar-days {
+    --gesto: rotate(-10deg);
+  }
+  .lucide-shopping-cart {
+    --gesto: translateX(4px);
+  }
+  .lucide-dumbbell {
+    --gesto: rotate(-25deg);
+  }
+  .lucide-check {
+    --gesto: scale(1.2);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lucide {
+      transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    :is(a, button):active .lucide {
+      transform: var(--gesto, none);
+    }
+    @media (hover: hover) {
+      :is(a, button):hover .lucide {
+        transform: var(--gesto, none);
+      }
+    }
+    nav [aria-current="page"] > .lucide {
+      animation: gesto 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  }
+}
+@keyframes gesto {
+  45% {
+    transform: var(--gesto, none);
+  }
+}
+
+/* --verso: 1 se il numero sale, -1 se scende. */
+.cifra {
+  position: relative;
+  display: inline-block;
+}
+.cifra-esce {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cifra-esce {
+    display: block;
+    position: absolute;
+    inset: 0;
+    animation: cifra-esce 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .cifra-entra {
+    display: inline-block;
+    animation: cifra-entra 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes cifra-entra {
+  from {
+    transform: translateY(calc(var(--verso) * 55%));
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes cifra-esce {
+  to {
+    transform: translateY(calc(var(--verso) * -55%));
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+.spunta path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+[aria-pressed="true"] > .spunta path {
+  stroke-dashoffset: 0;
+}
+.goccia-piena {
+  clip-path: inset(100% 0 0 0);
+}
+[aria-pressed="true"] > svg > .goccia-piena {
+  clip-path: inset(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spunta path {
+    transition: stroke-dashoffset 300ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
+  }
+  .goccia-piena {
+    transition: clip-path 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.campanella-corpo {
+  transform-box: view-box;
+  transform-origin: 12px 2px;
+}
+.campanella-batacchio {
+  transform-box: view-box;
+  transform-origin: 12px 17px;
+}
+.campanella-barra {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  /* Anche trasparente: a lunghezza zero il tratto tondo lascerebbe due punti. */
+  opacity: 0;
+}
+.campanella-stacco {
+  stroke: var(--bg);
+  stroke-width: 5;
+}
+.campanella.spenta .campanella-barra {
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .campanella-barra {
+    transition:
+      stroke-dashoffset 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0s linear 260ms;
+  }
+  /* Dopo il fondo grigio: lo stacco scuro non deve vedersi sul verde. */
+  .campanella.spenta .campanella-barra {
+    transition:
+      stroke-dashoffset 320ms cubic-bezier(0.22, 1, 0.36, 1) 100ms,
+      opacity 0s 100ms;
+  }
+  .campanella:not(.spenta) .campanella-stacco {
+    transition: none;
+  }
+  .campanella.suona .campanella-corpo {
+    animation: campanella-suona 750ms ease-in-out 120ms;
+  }
+  .campanella.suona .campanella-batacchio {
+    animation: campanella-batacchio 750ms ease-in-out 160ms;
+  }
+}
+@keyframes campanella-suona {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15% {
+    transform: rotate(16deg);
+  }
+  32% {
+    transform: rotate(-14deg);
+  }
+  48% {
+    transform: rotate(9deg);
+  }
+  64% {
+    transform: rotate(-5deg);
+  }
+  80% {
+    transform: rotate(2deg);
+  }
+}
+@keyframes campanella-batacchio {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-1.5px);
+  }
+  40% {
+    transform: translateX(1.5px);
+  }
+  60% {
+    transform: translateX(-1px);
+  }
+  80% {
+    transform: translateX(0.5px);
+  }
+}
+
 @utility titolo-sezione {
   @apply mt-6 mb-2 px-1 text-[17px] font-semibold;
 }

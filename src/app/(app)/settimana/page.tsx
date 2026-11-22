@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, PackageX } from "lucide-react";
+import Barre from "@/components/Barre";
 import IconaPasto from "@/components/IconaPasto";
 import Mese from "@/components/Mese";
-import { pastiCon, useAdesso, useManca, useSettimana, useSpesa } from "@/lib/dati";
+import { pastiCon, useAdesso, useFuoriPasto, useManca, useSettimana, useSpesa } from "@/lib/dati";
 import {
   aggiungiGiorni,
   dataBreve,
@@ -15,13 +16,18 @@ import {
   lunediDi,
   mancantiDi,
   piano,
+  senzaSaltati,
 } from "@/lib/piano";
+
+const LETTERE = ["L", "M", "M", "G", "V", "S", "D"];
 
 export default function Settimana() {
   const adesso = useAdesso();
   const [scarto, setScarto] = useState(0);
   const lunedi = adesso ? aggiungiGiorni(lunediDi(giornoDelPiano(adesso.data)), 7 * scarto) : null;
-  const { dati, errore } = useSettimana(lunedi);
+  const { dati, errore: erroreSettimana } = useSettimana(lunedi);
+  const fuori = useFuoriPasto(lunedi);
+  const errore = erroreSettimana ?? fuori.errore;
   const { stato: spesa } = useSpesa();
   const manca = useManca(spesa, adesso?.data ?? null);
 
@@ -30,6 +36,20 @@ export default function Settimana() {
   const giorni = giorniDellaSettimana(lunedi).map((d) => ({ data: d, pasti: pastiCon(d, dati, manca) }));
   const tutti = giorni.flatMap((g) => g.pasti);
   const fatti = tutti.filter((p) => p.fatto).length;
+  const kcalFuori = (d: string) =>
+    fuori.settimana.reduce((s, r) => (r.giorno === d ? s + (piano.cibi.find((c) => c.id === r.cibo)?.kcal ?? 0) : s), 0);
+  const kcal = giorni.map((g, i) => ({
+    etichetta: LETTERE[i],
+    titolo: dataBreve(g.data),
+    obiettivo: g.pasti.reduce((s, p) => s + p.ricetta.kcal, 0),
+    valore:
+      g.data > adesso.data
+        ? null
+        : g.pasti.reduce((s, p) => s + (p.fatto ? senzaSaltati(p.ricetta, p.saltati).kcal : 0), kcalFuori(g.data)),
+    evidenzia: g.data === adesso.data,
+  }));
+  const segnati = kcal.filter((k) => k.valore);
+  const media = (n: number[]) => Math.round(n.reduce((s, k) => s + k, 0) / n.length);
 
   return (
     <>
@@ -76,6 +96,19 @@ export default function Settimana() {
           </div>
         )}
       </section>
+
+      <Barre
+        titolo="Calorie"
+        unita="kcal"
+        barre={kcal}
+        fascia={piano.obiettivi.kcal}
+        pronto={!!dati && fuori.letto}
+        riepilogo={
+          segnati.length
+            ? `media ${media(segnati.map((k) => k.valore!))} kcal al giorno`
+            : `obiettivo medio ${media(kcal.map((k) => k.obiettivo))} kcal`
+        }
+      />
 
       <ul className="mt-4 space-y-3">
         {giorni.map((g) => {

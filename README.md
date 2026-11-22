@@ -17,12 +17,12 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 
 <br>
 
-<img src="docs/schermate/oggi.png" width="132" alt="Oggi: il prossimo pasto e i pasti del giorno">
-<img src="docs/schermate/pasto.png" width="132" alt="Pasto: la ricetta proposta, le alternative e cosa non hai">
+<img src="docs/schermate/oggi.png" width="132" alt="Oggi: calorie, proteine, pasti e allenamenti negli anelli, l'acqua e il prossimo pasto">
+<img src="docs/schermate/pasto.png" width="132" alt="Pasto: la ricetta proposta, le alternative e da dove vengono le calorie">
 <img src="docs/schermate/guida.png" width="132" alt="Guida: un passaggio della ricetta alla volta, con il timer in corso">
 <img src="docs/schermate/spesa.png" width="132" alt="Spesa: quando arriva la consegna, entro quando ordinare e cosa comprare">
 <img src="docs/schermate/allenamento.png" width="132" alt="Allenamento: sedute della settimana e seduta guidata">
-<img src="docs/schermate/tu.png" width="132" alt="Tu: gli orari dei pasti e degli avvisi, ognuno col suo interruttore, e la consegna della spesa">
+<img src="docs/schermate/tu.png" width="132" alt="Tu: gli orari dei pasti e degli avvisi, ognuno con la sua campanella, e la consegna della spesa">
 
 <sub>Le schermate usano il piano d'esempio, inventato.</sub>
 
@@ -38,7 +38,8 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
 ## Cosa fa
 
 - 🍽️ **Il pasto giusto, all'ora giusta.** Apri l'app e trovi il pasto del momento con ingredienti, calorie e
-  proteine. Segni i pasti fatti e vedi a che punto sei con la giornata, acqua compresa.
+  proteine. Segni i pasti fatti e vedi a che punto sei con la giornata negli anelli, acqua compresa; in Settimana
+  le calorie di ogni giorno contro l'obiettivo.
 - 🔁 **Ricette a rotazione.** Ogni lunedì cambia la proposta, e puoi sempre scegliere un'altra ricetta fra le
   alternative del tuo piano o scambiare il pasto con un altro giorno.
 - ⏱️ **Cucina passo per passo.** Un passaggio alla volta, a schermo intero e con lo schermo sempre acceso. Ogni
@@ -48,8 +49,9 @@ la spesa della settimana e una notifica quando è ora di mettersi ai fornelli.
   prima. Se manca qualcosa, propone una ricetta che puoi fare con quello che hai.
 - 🔔 **Notifiche.** Quando iniziare a cucinare, cosa spostare dal freezer al frigo la sera prima, quando
   allenarti.
-- ⚙️ **Orari tuoi.** L'ora di ogni pasto e di ogni avviso la cambi dall'app, e ogni avviso ha il suo
-  interruttore. In vacanza metti il piano in pausa: niente avvisi, e le scorte restano ferme.
+- ⚙️ **Orari tuoi.** L'ora di ogni pasto e di ogni avviso la cambi dall'app, e ogni avviso si spegne con la sua
+  campanella; gli avvisi di oggi li vedi su un orologio di 24 ore. In vacanza metti il piano in pausa: niente
+  avvisi, e le scorte restano ferme.
 - 💪 **Allenamento, se vuoi.** Le sedute della settimana, da spostare con un tocco, e la seduta guidata con i
   timer.
 - 📱 **Un'app sulla Home.** Si installa dal browser, anche su iPhone, e si apre come un'app.

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, BellOff, ChevronLeft, LogOut, Share } from "lucide-react";
+import Campanella from "@/components/Campanella";
+import Orologio from "@/components/Orologio";
 import { giorniSedute } from "@/lib/allenamento";
 import { chiavePasto, dimenticaDati, salvaPreferenze, useAdesso, useManca, useSettimana, useSpesa } from "@/lib/dati";
 import { aggiungiGiorni, dataBreve, lunediDi, oraValida, piano, profiloLocale, usaProfilo, type Preferenze } from "@/lib/piano";
@@ -15,15 +17,13 @@ function chiaveVapid(base64: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 
-const hhmm = (minuti: number) => `${String(Math.floor(minuti / 60)).padStart(2, "0")}:${String(minuti % 60).padStart(2, "0")}`;
-
 type StatoNotifiche = "caricamento" | "non-supportate" | "da-installare" | "spente" | "negate" | "attive";
 
 const CAMPO = "rounded-2xl border border-line bg-bg px-3 py-2 text-base outline-none focus:border-accent";
 // Gli orari che non sono di un pasto: la riga della tabella e il campo delle preferenze che la salva.
 const AVVISI = { scongela: "scongela", allenamento: "allenamento", spesa: "ordina" } as const;
 
-/** Le preferenze: orari dei pasti e degli avvisi (ognuno col suo interruttore), consegna della spesa e pausa.
+/** Le preferenze: orari dei pasti e degli avvisi (ognuno con la sua campanella), consegna della spesa e pausa.
  *  Un'ora si salva uscendo dal campo. "oggi" è null finché non si sa che giorno è. */
 function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | null; onSalvate: (p: Preferenze) => void }) {
   const [bozza, setBozza] = useState<Record<string, string>>({});
@@ -31,6 +31,7 @@ function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | nul
   const [inCorso, setInCorso] = useState<Preferenze | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [finoAl, setFinoAl] = useState("");
+  const [toccata, setToccata] = useState<string | null>(null);
   const muti = (inCorso ?? pref).muti ?? [];
   const righe = [
     ...piano.pasti.map((p) => ({ chiave: p.id as string, nome: p.nome, ora: p.ora })),
@@ -105,23 +106,29 @@ function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | nul
                 onBlur={() => esciDalCampo(r.chiave, r.ora)}
                 className={CAMPO}
               />
-              {/* "switch" è l'interruttore nativo di Safari (iPhone); altrove resta una casella di spunta. */}
-              <input
-                type="checkbox"
-                {...({ switch: "" } as object)}
+              <button
+                type="button"
                 aria-label={`Avviso: ${r.nome}`}
-                checked={!muti.includes(r.chiave)}
-                onChange={(e) =>
-                  salva({ ...pref, muti: e.target.checked ? muti.filter((m) => m !== r.chiave) : [...muti, r.chiave] })
-                }
-                className="h-6 w-6 shrink-0 accent-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-              />
+                aria-pressed={!muti.includes(r.chiave)}
+                onClick={() => {
+                  setToccata(r.chiave);
+                  salva({
+                    ...pref,
+                    muti: muti.includes(r.chiave) ? muti.filter((m) => m !== r.chiave) : [...muti, r.chiave],
+                  });
+                }}
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-90 ${
+                  muti.includes(r.chiave) ? "bg-bg text-muted" : "bg-accent-soft text-accent"
+                }`}
+              >
+                <Campanella accesa={!muti.includes(r.chiave)} suona={toccata === r.chiave} />
+              </button>
             </li>
           ))}
         </ul>
         <p className="text-sm leading-relaxed text-muted">
           L&apos;ora di un pasto vale in tutta l&apos;app: l&apos;avviso arriva a quell&apos;ora, o prima se il piatto va
-          cucinato. L&apos;interruttore spegne solo il suo avviso.
+          cucinato. La campanella spegne solo il suo avviso.
         </p>
         {errore && (
           <p role="alert" className="mt-2 text-sm text-fat">
@@ -369,20 +376,10 @@ export default function Tu() {
 
       <Orari pref={pref} oggi={adesso?.data ?? null} onSalvate={setPref} />
 
-      {oggi.length > 0 && (
+      {adesso && oggi.length > 0 && (
         <>
           <h2 className="titolo-sezione">Gli avvisi di oggi</h2>
-          <ul className="card divide-y divide-line px-5">
-            {oggi.map((p) => (
-              <li key={p.chiave} className="flex gap-4 py-3">
-                <span className="w-12 shrink-0 font-semibold text-accent">{hhmm(p.minuti)}</span>
-                <span className="min-w-0">
-                  <span className="block text-[15px] font-semibold">{p.titolo}</span>
-                  <span className="block text-sm text-muted">{p.testo}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <Orologio voci={oggi} minuti={adesso.minuti} />
         </>
       )}
 

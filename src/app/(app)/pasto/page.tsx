@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { ArrowLeftRight, Beef, ChefHat, ChevronLeft, Clock, Flame, PackageX, Snowflake, Timer } from "lucide-react";
 import BottoneFatto from "@/components/BottoneFatto";
+import Ciambella from "@/components/Ciambella";
 import Guida, { guidaDaRiaprire } from "@/components/Guida";
 import IconaPasto from "@/components/IconaPasto";
 import Ingredienti from "@/components/Ingredienti";
@@ -204,6 +205,14 @@ function Pasto() {
             </span>
           )}
         </div>
+        {r.kcal > 0 && (
+          <div className="mt-4">
+            <Ciambella
+              fette={r.ingredienti.map(([nome], i) => ({ nome, valore: r.valori[i].kcal, spenta: saltati.includes(nome) }))}
+              unita="kcal"
+            />
+          </div>
+        )}
         {daScongelare(r, manca).length > 0 && (
           <p className="mt-3 flex items-start gap-2 rounded-2xl bg-bg px-3 py-2.5 text-sm">
             <Snowflake className="mt-0.5 h-4 w-4 shrink-0 text-prot" />

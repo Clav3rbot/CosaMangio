@@ -74,7 +74,8 @@ export default function Mese({ oggi }: { oggi: string }) {
         {Array.from({ length: indiceGiorno(giorni[0]) }, (_, n) => (
           <span key={n} />
         ))}
-        {giorni.map((d) => {
+        {giorni.map((d, k) => {
+          const posto = indiceGiorno(giorni[0]) + k;
           const totale = pastiDelGiorno(d).length;
           const fatti = dati?.fatti[d] ?? 0;
           const numero = Number(d.slice(8));
@@ -87,7 +88,8 @@ export default function Mese({ oggi }: { oggi: string }) {
               aria-label={`${dataLunga(d)}${nelPiano(d) ? `: ${fatti} pasti su ${totale}` : ""}${
                 dati?.allenamenti.includes(d) ? ", allenamento fatto" : ""
               }`}
-              className="flex flex-col items-center gap-0.5"
+              className="cella-entra flex flex-col items-center gap-0.5"
+              style={{ animationDelay: `${(posto % 7) * 30 + Math.floor(posto / 7) * 12}ms` }}
             >
               <span
                 className={`grid h-10 w-10 place-items-center rounded-full text-sm font-semibold ${

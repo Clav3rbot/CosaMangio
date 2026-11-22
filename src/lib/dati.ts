@@ -269,57 +269,60 @@ export function usePorzioni(adesso: { data: string; minuti: number } | null, man
 
 const NESSUNO: FuoriPasto[] = [];
 
-/** I cibi segnati fuori dai pasti in un giorno (null = nessuno), con aggiungi (una porzione) e togli (l'ultima). */
+/** letto = righe arrivate, o non servono (giorno null). */
 export function useFuoriPasto(giorno: string | null) {
-  const [stato, setStato] = useState<{ giorno: string; righe: FuoriPasto[] } | null>(null);
+  const lunedi = giorno && lunediDi(giorno);
+  const [stato, setStato] = useState<{ lunedi: string; righe: FuoriPasto[] } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
-  const righe = giorno && stato?.giorno === giorno ? stato.righe : NESSUNO;
+  const settimana = lunedi && stato?.lunedi === lunedi ? stato.righe : NESSUNO;
+  const righe = useMemo(() => settimana.filter((r) => r.giorno === giorno), [settimana, giorno]);
 
   useEffect(() => {
-    if (!giorno) return;
+    if (!lunedi) return;
     let vivo = true;
     createClient()
       .from("fuori_pasto")
       .select("id,giorno,cibo,quando")
-      .eq("giorno", giorno)
+      .gte("giorno", lunedi)
+      .lte("giorno", aggiungiGiorni(lunedi, 6))
       .order("id")
       .then(({ data, error }) => {
         if (!vivo) return;
         if (error) return setErrore(error.message);
-        setStato({ giorno, righe: data });
+        setStato({ lunedi, righe: data });
       });
     return () => {
       vivo = false;
     };
-  }, [giorno]);
+  }, [lunedi]);
 
   // Si mostra dopo il salvataggio: serve l'id della riga per poterla togliere.
   const aggiungi = useCallback(
     async (cibo: string) => {
-      if (!giorno) return;
+      if (!giorno || !lunedi) return;
       const { data, error } = await createClient()
         .from("fuori_pasto")
         .insert({ user_id: await userId(), giorno, cibo })
         .select("id,giorno,cibo,quando")
         .single();
       if (error) return setErrore(error.message);
-      setStato((s) => ({ giorno, righe: [...(s?.giorno === giorno ? s.righe : []), data] }));
+      setStato((s) => ({ lunedi, righe: [...(s?.lunedi === lunedi ? s.righe : []), data] }));
     },
-    [giorno]
+    [giorno, lunedi]
   );
 
   const togli = useCallback(
     async (cibo: string) => {
       const ultima = righe.findLast((r) => r.cibo === cibo);
-      if (!giorno || !ultima) return;
-      setStato({ giorno, righe: righe.filter((r) => r !== ultima) });
+      if (!lunedi || !ultima) return;
+      setStato({ lunedi, righe: settimana.filter((r) => r !== ultima) });
       const { error } = await createClient().from("fuori_pasto").delete().eq("id", ultima.id);
       if (error) setErrore(error.message);
     },
-    [giorno, righe]
+    [lunedi, righe, settimana]
   );
 
-  return { righe, errore, aggiungi, togli };
+  return { righe, settimana, letto: !lunedi || stato?.lunedi === lunedi || !!errore, errore, aggiungi, togli };
 }
 
 export type DatiMese ={ fatti: Record<string, number>; allenamenti: string[] };

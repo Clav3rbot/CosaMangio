@@ -1,5 +1,3 @@
-import { Check } from "lucide-react";
-
 export default function BottoneFatto({
   fatto,
   nome,
@@ -21,7 +19,9 @@ export default function BottoneFatto({
         fatto ? "border-accent bg-accent text-accent-ink" : "border-line text-transparent"
       }`}
     >
-      <Check className="h-5 w-5" strokeWidth={3} />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="spunta h-5 w-5">
+        <path pathLength={1} d="M20 6 9 17l-5-5" />
+      </svg>
     </button>
   );
 }
