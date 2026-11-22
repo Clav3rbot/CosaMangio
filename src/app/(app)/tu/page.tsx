@@ -20,14 +20,13 @@ function chiaveVapid(base64: string) {
 type StatoNotifiche = "caricamento" | "non-supportate" | "da-installare" | "spente" | "negate" | "attive";
 
 const CAMPO = "rounded-2xl border border-line bg-bg px-3 py-2 text-base outline-none focus:border-accent";
-// Gli orari che non sono di un pasto: la riga della tabella e il campo delle preferenze che la salva.
+// Chiave della riga: campo delle preferenze che la salva.
 const AVVISI = { scongela: "scongela", allenamento: "allenamento", spesa: "ordina" } as const;
 
-/** Le preferenze: orari dei pasti e degli avvisi (ognuno con la sua campanella), consegna della spesa e pausa.
- *  Un'ora si salva uscendo dal campo. "oggi" è null finché non si sa che giorno è. */
+/** oggi: null finché non si sa che giorno è. */
 function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | null; onSalvate: (p: Preferenze) => void }) {
   const [bozza, setBozza] = useState<Record<string, string>>({});
-  // Le preferenze in corso di salvataggio: gli interruttori le mostrano subito, senza aspettare il database.
+  // Gli interruttori mostrano subito il cambio, senza aspettare il database.
   const [inCorso, setInCorso] = useState<Preferenze | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [finoAl, setFinoAl] = useState("");
@@ -39,13 +38,12 @@ function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | nul
     ...(piano.allenamento ? [{ chiave: "allenamento", nome: "Allenamento", ora: piano.allenamento.ora }] : []),
     ...(piano.consegna ? [{ chiave: "spesa", nome: "Ordina la spesa (il giorno prima)", ora: piano.avvisi.ordina }] : []),
   ];
-  // "orari" è quello che "Torna agli orari del piano" toglie: consegna e pause restano.
+  // "Torna agli orari del piano" toglie orari: consegna e pause restano.
   const { consegna, pause = [], ...orari } = pref;
-  // La pausa di adesso, se c'è: è sempre l'ultima, perché una nuova parte da oggi.
+  // L'ultima: una pausa nuova parte sempre da oggi.
   const pausa = oggi && pause.findLast((p) => !p.al || p.al >= oggi);
 
   async function salva(nuove: Preferenze) {
-    // Senza un orario suo, un pasto ha quello del piano: è quello che piano.pasti mostra adesso.
     const ore = piano.pasti.map((p) => nuove.orari?.[p.id] ?? p.ora);
     if (nuove.orari && ore.some((o, i) => i > 0 && ore[i - 1] >= o)) {
       setBozza({});
@@ -66,7 +64,6 @@ function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | nul
 
   function esciDalCampo(chiave: string, prima: string) {
     const ora = bozza[chiave];
-    // Campo svuotato o non toccato: resta l'ora di prima.
     if (!oraValida(ora) || ora === prima) return setBozza({});
     if (chiave === "consegna") salva({ ...pref, consegna: { ...pref.consegna!, ora } });
     else if (chiave in AVVISI) salva({ ...pref, [AVVISI[chiave as keyof typeof AVVISI]]: ora });
@@ -75,12 +72,11 @@ function Orari({ pref, oggi, onSalvate }: { pref: Preferenze; oggi: string | nul
 
   function mettiInPausa() {
     if (!oggi || (finoAl && finoAl < oggi)) return setErrore("La pausa finisce oggi o più avanti.");
-    // Le pause vecchie restano (le ultime): servono al conto delle scorte.
+    // Le ultime pause vecchie restano: servono al conto delle scorte.
     salva({ ...pref, pause: [...pause.slice(-9), finoAl ? { dal: oggi, al: finoAl } : { dal: oggi }] });
     setFinoAl("");
   }
 
-  /** Da oggi il piano riparte: la pausa finisce ieri, o sparisce se era iniziata oggi. */
   function riprendi() {
     if (!oggi || !pausa) return;
     const ieri = aggiungiGiorni(oggi, -1);

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 
-/** Lista ingredienti. Con "saltati" e "onTocca" le spunte le tiene la pagina (nel pasto: quelli che non hai mangiato,
- *  salvati; nella guida: quelli già pronti); senza, lo spunti mentre lo prepari e la spunta vale finché resti sulla pagina. */
+/** Con saltati e onTocca le spunte le tiene la pagina; senza, durano finché resti sulla pagina. */
 export default function Ingredienti({
   voci,
   grande = false,

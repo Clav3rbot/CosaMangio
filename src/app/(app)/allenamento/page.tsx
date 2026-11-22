@@ -10,7 +10,7 @@ import { useAdesso, useSettimana } from "@/lib/dati";
 import { dataBreve, dataLunga, giorniDellaSettimana, lunediDi, piano, type Allenamento as Piano } from "@/lib/piano";
 
 export default function Allenamento() {
-  // Senza allenamento nel piano la barra in basso non porta qui; l'indirizzo scritto a mano lo dice.
+  // Senza allenamento ci si arriva solo scrivendo l'indirizzo.
   if (!piano.allenamento) return <p className="pt-8 text-center text-muted">Il piano non ha un allenamento.</p>;
   return <Seduta a={piano.allenamento} />;
 }
@@ -59,7 +59,6 @@ function Seduta({ a }: { a: Piano }) {
                 className="w-full rounded-xl border border-line bg-card px-2 py-1.5 text-sm font-semibold"
               >
                 {giorniDellaSettimana(lunedi).map((d) => (
-                  // Una seduta si sposta su un giorno libero, da oggi in poi.
                   <option key={d} value={d} disabled={d !== g && (d < oggi || previste.includes(d))}>
                     {dataLunga(d)}
                   </option>

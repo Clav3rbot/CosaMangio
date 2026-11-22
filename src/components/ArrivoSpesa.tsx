@@ -16,8 +16,7 @@ import { quantoMostrare } from "@/lib/scorte";
 
 const voci = new Map(piano.spesa.map((v) => [v.id, v]));
 
-// L'ultimo documento confermato, per accorgersi se lo ricarichi: le scorte si sommerebbero due volte. Sta sul
-// telefono: da un altro dispositivo l'avviso non c'è.
+// Per accorgersi di un documento ricaricato: le scorte si sommerebbero due volte.
 const ULTIMO = "dieta:ultimo-documento";
 const impronta = (d: Documento) => `${d.data}|${d.righe.map((r) => `${r.codice}:${r.qta}`).join(",")}`;
 function ultimoDocumento(nuovo?: string) {
@@ -25,23 +24,21 @@ function ultimoDocumento(nuovo?: string) {
     if (nuovo) localStorage.setItem(ULTIMO, nuovo);
     return localStorage.getItem(ULTIMO);
   } catch {
-    return null; // navigazione privata o memoria bloccata: si va avanti senza avviso
+    return null; // navigazione privata o memoria bloccata
   }
 }
 
 type Riga = {
   r: RigaScontrino;
-  auto: string | null | undefined; // prodotto riconosciuto da solo; undefined = sconosciuto
-  nuovo: boolean; // codice mai visto, abbinato solo dal nome: va mostrato una volta
-  v: VoceSpesa | null; // prodotto in uso, con le correzioni
+  auto: string | null | undefined; // undefined = sconosciuto
+  nuovo: boolean; // codice mai visto, abbinato solo dal nome
+  v: VoceSpesa | null;
   quanto: { q: number; stimata: boolean } | null;
 };
 
-// Il lettore del documento di consegna serve solo se il piano ha le regole per riconoscerne le righe.
 const CON_DOCUMENTO = piano.scontrino.length > 0;
 
-/** "Spesa arrivata": dal documento di consegna Esselunga, se il piano lo legge, o a mano toccando quello che non è
- *  arrivato. arrivati = quanto è arrivato per prodotto; impara = articoli che hai sistemato tu (prodotto e peso). */
+/** impara: gli articoli sistemati a mano (prodotto e peso), da ricordare. */
 export default function ArrivoSpesa({
   inArrivo,
   compri,
@@ -80,18 +77,17 @@ export default function ArrivoSpesa({
     const auto = prodottoRiga(r, nomi);
     const id = r.codice in scelte ? scelte[r.codice] || null : (auto ?? null);
     const v = id ? voci.get(id)! : null;
-    // Il peso di una confezione: quello che hai scritto tu per quel codice, se no quello già noto.
     const peso = nomi[r.codice]?.grammi ?? piano.articoli[r.codice];
     const nuovo = !!auto && !(r.codice in nomi) && !(r.codice in piano.articoli);
     return { r, auto, nuovo, v, quanto: v && r.consegnata ? quantitaRiga(r, v, peso) : null };
   });
-  // Da guardare: le righe sconosciute e la carne senza peso scritto, che serve alle porzioni.
+  // La carne senza peso scritto va controllata: il peso serve alle porzioni.
   const daControllare = righe.filter(
     (x) => x.r.consegnata && (x.auto === undefined || (x.v?.tieni && x.quanto?.stimata))
   );
   const nonConsegnate = righe.filter((x) => !x.r.consegnata);
   const resto = righe.filter((x) => x.r.consegnata && !daControllare.includes(x));
-  // Abbinati dal nome per la prima volta: restano in vista, perché una parola può ingannare ("petto di tacchino").
+  // Abbinati solo dal nome: restano in vista, una parola può ingannare.
   const nuove = resto.filter((x) => x.nuovo);
   const riconosciute = resto.filter((x) => x.v && !x.nuovo);
   const fuoriLista = resto.filter((x) => !x.v && !x.nuovo);
@@ -106,8 +102,7 @@ export default function ArrivoSpesa({
     const impara: Record<string, NomeArticolo> = {};
     for (const { r, auto, nuovo, v, quanto } of righe) {
       const scritto = Number(pesi[r.codice]) || 0;
-      // Si ricorda le righe che hai sistemato o visto tu: quelle che non conosceva, quelle abbinate dal nome per la
-      // prima volta, quelle corrette e i pesi scritti a mano.
+      // Si ricordano le righe sconosciute, abbinate dal nome, corrette o con il peso scritto a mano.
       if (auto === undefined || nuovo || (r.codice in scelte && (scelte[r.codice] || null) !== auto) || scritto) {
         const grammi = scritto ? scritto / confezioniRiga(r) : (nomi[r.codice]?.grammi ?? null);
         impara[r.codice] = { prodotto: v?.id ?? "", grammi };

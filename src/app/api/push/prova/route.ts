@@ -3,7 +3,7 @@ import type { PushSubscription } from "web-push";
 import { createClient } from "@/lib/supabase/server";
 import { inviaNotifica } from "@/lib/push";
 
-/** POST /api/push/prova — notifica di prova ai dispositivi dell'utente collegato. */
+/** Nessun filtro per utente: la RLS restituisce solo le iscrizioni di chi è collegato. */
 export async function POST() {
   const sb = await createClient();
   const { data, error } = await sb.from("push_subscriptions").select("endpoint,subscription");

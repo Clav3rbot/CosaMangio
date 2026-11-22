@@ -7,14 +7,10 @@ import { adessoNelFuso, aggiungiGiorni, lunediDi, usaPiano, type PastoId, type P
 import { promemoriaDelGiorno, type Promemoria } from "@/lib/promemoria";
 import { mancaDa } from "@/lib/scorte";
 
-// Un promemoria parte se il suo orario è passato da meno di 15 minuti: il cron gira ogni 5,
-// così un giro saltato non fa perdere la notifica. push_log impedisce i doppioni.
+// Finestra più larga del giro del cron (5 min): un giro saltato non perde l'avviso; push_log evita i doppioni.
 const FINESTRA_MINUTI = 15;
 
-/**
- * POST /api/push/tick — chiamato ogni 5 minuti dal cron di Supabase (supabase/cron.sql).
- * Prova manuale: ?at=AAAA-MM-GGTHH:MM simula quell'ora nel fuso del piano, ?dry=1 elenca senza inviare.
- */
+/** Dal cron (supabase/cron.sql). Prova: ?at=AAAA-MM-GGTHH:MM simula l'ora nel fuso del piano, ?dry=1 non invia. */
 export async function POST(request: Request) {
   if (!process.env.CRON_SECRET || request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "non autorizzato" }, { status: 401 });
@@ -30,7 +26,7 @@ export async function POST(request: Request) {
   const { data: iscrizioni, error } = await sb.from("push_subscriptions").select("endpoint,user_id,subscription");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Piano e preferenze di ognuno. Chi non ha una riga (o se la tabella non si legge) segue il piano predefinito.
+  // Senza riga, o se la tabella non si legge, vale il piano predefinito.
   const { data: righeProfili } = await sb.from("profili").select("user_id,piano,preferenze");
   const profili = new Map((righeProfili ?? []).map((r) => [r.user_id as string, r as Profilo]));
 
@@ -51,14 +47,13 @@ export async function POST(request: Request) {
     if (errore) return NextResponse.json({ error: errore.message }, { status: 500 });
     let dovuti: Promemoria[];
     try {
-      // Il piano di questo utente, fino a "dovuti": da qui in giù niente await, così un'altra richiesta non lo cambia.
+      // usaPiano è globale: fino a "dovuti" niente await, o un'altra richiesta lo cambia.
       usaPiano(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
       const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
       // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
       const sedutaOggi =
         giorniSedute(lunedi, spostate.data?.giorni as string[] | undefined).includes(adesso.data) &&
         !allenamenti.data!.some((r) => r.giorno === adesso.data);
-      // Come nell'app: i pasti proposti sono quelli che puoi fare con quello che hai.
       const manca = mancaDa(
         Object.fromEntries(spesa.data!.map((r) => [r.prodotto as string, r.stato as string])),
         Object.fromEntries(scorte.data!.map((r) => [r.prodotto as string, { quantita: r.quantita, dal: r.dal }])),
@@ -71,7 +66,7 @@ export async function POST(request: Request) {
         manca
       ).filter((p) => p.minuti <= adesso.minuti && adesso.minuti - p.minuti < FINESTRA_MINUTI);
     } catch (e) {
-      // Queste righe le scrive l'utente: se le sue fanno saltare i conti, gli altri ricevono lo stesso i loro avvisi.
+      // Dati scritti dall'utente: se i suoi rompono i conti, gli altri ricevono lo stesso gli avvisi.
       console.error("avvisi saltati per un utente:", (e as Error).message);
       continue;
     }
@@ -83,7 +78,7 @@ export async function POST(request: Request) {
       }
       const chiave = `${uid}:${adesso.data}:${p.chiave}`;
       const { error: doppione } = await sb.from("push_log").insert({ chiave });
-      if (doppione) continue; // già mandata in un giro precedente (o errore del DB: meglio saltare che ripetere)
+      if (doppione) continue; // già mandata, o errore del DB: meglio saltare che ripetere
       const mie = iscrizioni
         .filter((s) => s.user_id === uid)
         .map((s) => ({ endpoint: s.endpoint as string, subscription: s.subscription as PushSubscription }));
@@ -92,7 +87,6 @@ export async function POST(request: Request) {
     }
   }
 
-  // Le righe di push_log più vecchie di una settimana non servono più.
   if (!dry) await sb.from("push_log").delete().lt("sent_at", new Date(Date.now() - 7 * 86400000).toISOString());
 
   return NextResponse.json({ adesso, report });

@@ -17,26 +17,21 @@ export default function Spesa() {
   const nomi = useNomiScontrino();
   const [soloMancanti, setSoloMancanti] = useState(false);
   const [arrivo, setArrivo] = useState(false);
-  // Quanto avevi dei prodotti che hai segnato finiti: se era un tocco per sbaglio, la spunta lo rimette.
+  // Per rimettere la scorta se "finito" era un tocco per sbaglio.
   const [tolti, setTolti] = useState<Record<string, number>>({});
   const s = stato ?? {};
 
   const hai = (v: VoceSpesa) => scorte.stima[v.id] ?? 0;
-  // Quello che vale per la prossima spesa: i freschi arrivati da giorni no.
   const conta = (v: VoceSpesa) => contaPerSpesa(v, hai(v), scorte.giorni[v.id] ?? 0);
-  // Quanto serve: la quantità fissa della lista, o per i freschi quella dei piatti della settimana dopo la consegna.
   const serve = (v: VoceSpesa) => quantoServe(v, scorte.fabbisogno);
   const coperto = (v: VoceSpesa) => conta(v) >= serve(v);
   const presi = piano.spesa.filter(coperto).length;
-  // Cosa aspetti dalla consegna: quello che non hai già.
   const inArrivo = piano.spesa.filter((v) => !coperto(v));
   const daCongelare = piano.spesa.filter((v) => s[v.id] === "da_congelare");
   const nonArrivati = piano.spesa.filter((v) => s[v.id] === "manca");
-  // Senza documento di consegna: si suppone che hai preso le confezioni che mancavano (almeno una).
+  // Senza documento di consegna si suppone arrivato quello che mancava, almeno una confezione.
   const compri = (v: VoceSpesa) => Math.max(1, confezioniDaComprare(v, conta(v), serve(v))) * v.conf;
 
-  /** Arrivato: si somma alle scorte (al posto del fresco vecchio); carne e pane passano da "porziona e congela", il
-   *  non arrivato resta segnato. */
   function arrivati(quanti: Record<string, number>, mancanti: string[], impara: Record<string, NomeArticolo>) {
     const voce = (id: string) => piano.spesa.find((v) => v.id === id)!;
     imposta({
@@ -48,20 +43,16 @@ export default function Spesa() {
     setArrivo(false);
   }
 
-  /** Ce l'ho (comprato in negozio, o ne ho abbastanza): basta per la settimana. */
   function celho(v: VoceSpesa, daCongelare: boolean) {
     scorte.imposta({ [v.id]: Math.max(tolti[v.id] ?? 0, hai(v), v.q) });
     if (s[v.id] === "manca" || daCongelare) imposta({ [v.id]: daCongelare ? "da_congelare" : null });
   }
 
-  /** È finito: la scorta va a zero. */
   function finito(v: VoceSpesa) {
     setTolti({ ...tolti, [v.id]: hai(v) });
     scorte.imposta({ [v.id]: 0 });
   }
 
-  // Per ogni prodotto da congelare: quanto serve oggi e domani (resta fuori dal freezer), cosa va in freezer e quanto
-  // avanza della confezione dopo i prossimi 7 giorni.
   const domani = adesso ? aggiungiGiorni(adesso.data, 1) : "";
   const sistemare = daCongelare.map((v) => {
     const lista = porzioni?.[v.id] ?? [];
@@ -74,7 +65,7 @@ export default function Spesa() {
     return { v, presto, freezer };
   });
   const errori = [errore, scorte.errore, nomi.errore].filter(Boolean);
-  // La consegna abituale (da Tu): la spesa si ordina il giorno prima. "tardi" = qualcosa finisce prima che arrivi.
+  // La spesa si ordina il giorno prima della consegna.
   const consegna = adesso && prossimaConsegna(adesso);
   const ordinaEntro = consegna ? aggiungiGiorni(consegna.data, -1) : "";
   const finisce = scorte.prossima && {

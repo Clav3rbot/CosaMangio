@@ -32,18 +32,16 @@ import {
 } from "@/lib/piano";
 import { ricettaDi } from "@/lib/promemoria";
 
-/** saltati = nomi degli ingredienti che non hai mangiato: escono da kcal, proteine e consumo delle scorte. */
+/** saltati = nomi degli ingredienti non mangiati. */
 export type StatoPasto = { ricetta: string | null; fatto: boolean; saltati: string[] };
-/** allenamenti = giorni delle sedute fatte; spostate = giorni delle sedute se li hai spostati (null = i soliti). */
+/** spostate: null = giorni soliti delle sedute. */
 export type DatiSettimana = { pasti: Record<string, StatoPasto>; allenamenti: string[]; spostate: string[] | null };
-/** "da_congelare" = arrivato, da porzionare; "manca" = ordinato ma non arrivato: i pasti che lo usano lo segnalano
- *  finché non lo ricompri. Quanto ne hai in casa sta nelle scorte (useScorte). */
+/** "da_congelare" = arrivato, da porzionare; "manca" = ordinato ma non arrivato. */
 export type StatoSpesa = "da_congelare" | "manca";
 
 const VUOTA: DatiSettimana = { pasti: {}, allenamenti: [], spostate: null };
 export const chiavePasto = (giorno: string, pasto: PastoId) => `${giorno}|${pasto}`;
 
-/** I pasti di un giorno con la ricetta in uso (scelta, o proposta con quello che hai) e se sono stati mangiati. */
 export function pastiCon(giorno: string, dati: DatiSettimana | null, manca?: (id: string) => boolean) {
   return pastiDelGiorno(giorno).map((p) => {
     const stato = dati?.pasti[chiavePasto(giorno, p.id)];
@@ -52,8 +50,7 @@ export function pastiCon(giorno: string, dati: DatiSettimana | null, manca?: (id
   });
 }
 
-// Quello che si legge dal database resta anche in questo browser: riaprendo l'app compare subito l'ultimo stato
-// noto, senza aspettare la rete, poi si riallinea. Sono i dati di chi era collegato: login e logout li svuotano.
+// Copia locale del database per mostrare subito l'ultimo stato; login e logout la svuotano.
 const MEMORIA = "dieta:dati:";
 
 function ricordato<T>(chiave: string): T | null {
@@ -69,7 +66,7 @@ function ricorda(chiave: string, valore: unknown) {
   try {
     localStorage.setItem(MEMORIA + chiave, JSON.stringify(valore));
   } catch {
-    // Memoria del browser piena o spenta: alla prossima apertura si aspetta il database, come prima.
+    // Memoria del browser piena o spenta: si aspetterà il database.
   }
 }
 
@@ -81,7 +78,7 @@ export function dimenticaDati() {
   }
 }
 
-// Cache di modulo: cambiando scheda i dati già letti compaiono subito, poi si riallineano col DB.
+// Cache di modulo: cambiando scheda i dati già letti compaiono subito.
 const settimane = new Map<string, DatiSettimana>();
 let spesaCache = ricordato<Record<string, StatoSpesa>>("spesa");
 
@@ -101,14 +98,13 @@ async function userId() {
   return data.session?.user.id ?? null;
 }
 
-/** Il profilo dell'utente collegato, dal database. Senza riga valgono il piano predefinito e nessuna preferenza. */
 export async function leggiProfilo(): Promise<Profilo> {
   const { data, error } = await createClient().from("profili").select("piano,preferenze").maybeSingle();
   if (error) throw new Error(error.message);
   return { piano: data?.piano ?? "", preferenze: data?.preferenze ?? {} };
 }
 
-/** Salva le preferenze e le applica subito. Il piano della riga non si tocca; se la riga non c'è nasce col predefinito. */
+/** Non tocca il piano della riga; senza riga nasce col predefinito. */
 export async function salvaPreferenze(preferenze: Preferenze) {
   const { data, error } = await createClient()
     .from("profili")
@@ -116,12 +112,11 @@ export async function salvaPreferenze(preferenze: Preferenze) {
     .select("piano,preferenze")
     .single();
   if (error) throw new Error(error.message);
-  // Si tiene la riga come la restituisce il database: è quella che AppShell confronta al prossimo avvio.
+  // La riga come la restituisce il database: AppShell la confronta al prossimo avvio.
   usaProfilo({ piano: data.piano, preferenze: data.preferenze });
 }
 
-/** Data e minuti di adesso (nel fuso del piano), aggiornati ogni minuto. null al primo render, per non
- *  disallineare l'HTML del server da quello del telefono. */
+/** null al primo render, per non disallineare l'HTML del server da quello del telefono. */
 export function useAdesso() {
   const [adesso, setAdesso] = useState<ReturnType<typeof adessoNelFuso> | null>(null);
   useEffect(() => {
@@ -137,7 +132,7 @@ export function useAdesso() {
 }
 
 export function useSettimana(lunedi: string | null) {
-  // Lo stato ricorda di quale settimana sono i dati: cambiando settimana si parte dalla cache.
+  // Lo stato ricorda la sua settimana: cambiandola si parte dalla cache.
   const [stato, setStato] = useState<{ lunedi: string; dati: DatiSettimana } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const dati = lunedi ? (stato?.lunedi === lunedi ? stato.dati : (settimana(lunedi) ?? null)) : null;
@@ -163,7 +158,7 @@ export function useSettimana(lunedi: string | null) {
           p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }])
         ),
         allenamenti: a.data.map((r) => r.giorno),
-        // Se non si leggono (tabella non ancora creata) valgono i giorni soliti: l'errore esce solo spostando.
+        // Senza tabella valgono i giorni soliti: l'errore esce solo spostando.
         spostate: s.data?.giorni ?? null,
       };
       tieniSettimana(lunedi, letti);
@@ -212,7 +207,7 @@ export function useSettimana(lunedi: string | null) {
     [lunedi, setDati]
   );
 
-  /** Sposta la seduta del giorno "da" al giorno "a", solo per questa settimana. */
+  /** Solo per questa settimana. */
   const spostaSeduta = useCallback(
     async (da: string, a: string) => {
       if (!lunedi) return;
@@ -234,11 +229,10 @@ export function useSettimana(lunedi: string | null) {
   return { dati, errore, salvaPasto, segnaAllenamento, spostaSeduta };
 }
 
-/** Un sacchetto da congelare: quanto ne usano i pasti di un giorno (YYYY-MM-DD). */
+/** Un sacchetto da congelare: quanto usano i pasti di quel giorno. */
 export type Porzione = { g: number; giorno: string };
 
-/** Carne e pane da porzionare all'arrivo della spesa: per prodotto, un sacchetto per giorno, con quanto ne usano
- *  le ricette in uso (scelte o proposte dalla rotazione) nei pasti dei prossimi 7 giorni. */
+/** Per prodotto da porzionare, un sacchetto per giorno nei prossimi 7 giorni. */
 export function usePorzioni(adesso: { data: string; minuti: number } | null, manca?: (id: string) => boolean) {
   const inizio = adesso && giornoDelPiano(adesso.data);
   const lunedi = inizio && lunediDi(inizio);
@@ -252,7 +246,7 @@ export function usePorzioni(adesso: { data: string; minuti: number } | null, man
     const giorno = aggiungiGiorni(inizio, i);
     const dati = indiceGiorno(inizio) + i < 7 ? prima.dati : dopo.dati;
     for (const p of pastiCon(giorno, dati, manca)) {
-      // Ogni pasto della settimana una volta: se oggi è già passato, conta lo stesso pasto fra 7 giorni.
+      // Ogni pasto una volta: se oggi è passato, conta quello fra 7 giorni.
       const passato = inizio === adesso.data && minutiDa(p.ora) <= adesso.minuti;
       if (i === 7 ? !passato : i === 0 && passato) continue;
       for (const [prodotto, g] of Object.entries(p.ricetta.prodotti)) {
@@ -296,7 +290,7 @@ export function useFuoriPasto(giorno: string | null) {
     };
   }, [lunedi]);
 
-  // Si mostra dopo il salvataggio: serve l'id della riga per poterla togliere.
+  // Non ottimistico: serve l'id della riga per poterla togliere.
   const aggiungi = useCallback(
     async (cibo: string) => {
       if (!giorno || !lunedi) return;
@@ -328,7 +322,6 @@ export function useFuoriPasto(giorno: string | null) {
 export type DatiMese ={ fatti: Record<string, number>; allenamenti: string[] };
 const mesi = new Map<string, DatiMese>();
 
-/** Per il calendario: quanti pasti hai fatto in ogni giorno del mese (YYYY-MM) e in quali giorni ti sei allenato. */
 export function useMese(mese: string) {
   const [stato, setStato] = useState<{ mese: string; dati: DatiMese } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
@@ -347,7 +340,7 @@ export function useMese(mese: string) {
       if (p.error || a.error) return setErrore((p.error ?? a.error)!.message);
       const fatti: Record<string, number> = {};
       for (const r of p.data) {
-        // Conta solo i pasti che quel giorno prevede: una riga con un nome di pasto sconosciuto non gonfia il conto.
+        // Una riga con un pasto che quel giorno non prevede non gonfia il conto.
         if (pastiDelGiorno(r.giorno).some((s) => s.id === r.pasto)) fatti[r.giorno] = (fatti[r.giorno] ?? 0) + 1;
       }
       const letti = { fatti, allenamenti: a.data.map((r) => r.giorno as string) };
@@ -378,7 +371,7 @@ export function useSpesa() {
       });
   }, []);
 
-  /** Cambia lo stato di uno o più prodotti insieme; null = torna da comprare. */
+  /** null = torna da comprare. */
   const imposta = useCallback(async (cambi: Record<string, StatoSpesa | null>) => {
     const next = { ...spesaCache };
     for (const [prodotto, nuovo] of Object.entries(cambi)) {
@@ -404,7 +397,7 @@ export function useSpesa() {
 }
 
 let scorteCache = ricordato<Record<string, Scorta>>("scorte");
-// Le ricette scelte e i cibi fuori pasto da cui si stimano le scorte (useScorte), come coppie chiave-valore.
+// Coppie chiave-valore, non Map: finiscono in localStorage come JSON.
 let scelteCache = ricordato<[string, StatoPasto][]>("scelte");
 let fuoriCache = ricordato<FuoriPasto[]>("fuori");
 
@@ -419,18 +412,16 @@ async function leggiScorte() {
   return lette;
 }
 
-/** Cosa non hai (mancaDa), con lo stato della spesa di useSpesa: per proporre e segnalare i pasti. */
 export function useManca(spesa: Record<string, StatoSpesa> | null, oggi: string | null) {
   const [scorte, setScorte] = useState(scorteCache);
   useEffect(() => {
-    // Se le scorte non si leggono vale solo il "non arrivato": l'errore lo mostra la pagina Spesa.
+    // Errore ignorato qui: lo mostra la pagina Spesa.
     leggiScorte().then(setScorte, () => {});
   }, []);
   return useMemo(() => mancaDa(spesa, scorte, oggi ?? ""), [spesa, scorte, oggi]);
 }
 
-/** Quanto hai in casa di ogni prodotto: l'ultima quantità nota (consegna o correzione), meno quello che i pasti del
- *  piano hanno usato da allora. "spesa" è lo stato di useSpesa: serve a sapere quali ricette usano i pasti. */
+/** Stima: l'ultima quantità nota meno quello che i pasti hanno usato da allora. */
 export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpesa> | null) {
   const [scorte, setScorte] = useState(scorteCache);
   const [scelte, setScelte] = useState<Map<string, StatoPasto> | null>(() => scelteCache && new Map(scelteCache));
@@ -442,7 +433,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
     leggiScorte()
       .then(async (lette) => {
         setScorte(lette);
-        // Le ricette scelte servono dal giorno della scorta più vecchia: le altre vengono dalla rotazione.
+        // Servono solo dal giorno della scorta più vecchia.
         const primo = Object.values(lette).map((s) => adessoNelFuso(new Date(s.dal)).data).sort()[0];
         if (!primo) return setScelte(new Map());
         const sb = createClient();
@@ -452,7 +443,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
         ]);
         if (p.error) return setErrore(p.error.message);
         scelteCache = p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }]);
-        // Senza la tabella (SQL non ancora eseguito) le scorte scendono solo coi pasti: l'errore lo mostra Oggi.
+        // Senza tabella le scorte scendono solo coi pasti: l'errore lo mostra Oggi.
         fuoriCache = f.data ?? [];
         ricorda("scelte", scelteCache);
         ricorda("fuori", fuoriCache);
@@ -462,12 +453,12 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
       .catch((e: Error) => setErrore(e.message));
   }, []);
 
-  // stima = quanto ne resta adesso; giorni = da quanti giorni vale quella quantità (per i freschi).
+  // giorni = da quanti giorni vale la quantità, per i freschi.
   const { stima, giorni } = useMemo(() => {
     const stima: Record<string, number> = {};
     const giorni: Record<string, number> = {};
     if (!scorte || !adesso) return { stima, giorni };
-    const consumi = new Map<string, Record<string, number>>(); // un calcolo per ogni momento di partenza
+    const consumi = new Map<string, Record<string, number>>();
     for (const [id, s] of Object.entries(scorte)) {
       let c = consumi.get(s.dal);
       if (!c) {
@@ -488,7 +479,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
     return { stima, giorni };
   }, [scorte, scelte, fuori, adesso, manca]);
 
-  /** Quanto hai adesso di uno o più prodotti: la stima riparte da qui. */
+  /** La stima riparte da queste quantità. */
   const imposta = useCallback(async (nuove: Record<string, number>) => {
     const dal = new Date().toISOString();
     const next = { ...scorteCache };
@@ -503,7 +494,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
     if (error) setErrore(error.message);
   }, []);
 
-  // Quando serve la spesa nuova: null finché le scorte non sono lette, o se sei coperto per i prossimi giorni.
+  // null finché le scorte non sono lette, o se sei coperto.
   const prossima = useMemo(
     () =>
       scorte && adesso && scelte
@@ -519,7 +510,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
     [scorte, scelte, stima, adesso, spesa]
   );
 
-  // Quanto usano i pasti della settimana per cui fai la spesa: è quanto serve dei freschi. null finché non si sa.
+  // Quanto serve dei freschi; null finché non si sa.
   const fabbisogno = useMemo(
     () => (adesso && scelte ? fabbisognoSettimana(adesso, (d, p) => scelte.get(chiavePasto(d, p))?.ricetta) : null),
     [adesso, scelte]
@@ -528,7 +519,7 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
   return { stima, giorni, manca, prossima, fabbisogno, pronto: !!scorte, errore, imposta };
 }
 
-/** Gli articoli del documento di consegna che hai già sistemato tu: prodotto della lista e peso di una confezione. */
+/** Articoli del documento di consegna già abbinati a mano. */
 export function useNomiScontrino() {
   const [nomi, setNomi] = useState<Record<string, NomeArticolo>>({});
   const [errore, setErrore] = useState<string | null>(null);

@@ -15,20 +15,17 @@ import { ricettaDi, type Scelta } from "@/lib/promemoria";
 export type Momento = { data: string; minuti: number };
 export type Scorta = { quantita: number; dal: string };
 
-/** Giorni interi da quando vale una scorta ("dal", un istante) a oggi (YYYY-MM-DD, nel fuso del piano). */
+/** dal = un istante; oggi = YYYY-MM-DD nel fuso del piano. */
 export const giorniDa = (dal: string, oggi: string) =>
   Math.round((Date.parse(oggi) - Date.parse(adessoNelFuso(new Date(dal)).data)) / 86_400_000);
 
-/** Dopo quanti giorni un fresco arrivato con la spesa non si propone più nei pasti: è finito o da buttare. */
+/** Dopo questi giorni un fresco non si propone più nei pasti: è finito o da buttare. */
 export const GIORNI_FRESCO_PASTI = 7;
 
-// Calcolato a ogni chiamata, non una volta per modulo: il cron cambia piano da un utente all'altro (usaPiano).
+// Non una volta per modulo: il cron cambia piano fra un utente e l'altro.
 const fresco = (id: string) => piano.spesa.some((v) => v.id === id && v.fresco);
 
-/** Cosa non hai, per proporre e segnalare i pasti: quello ordinato e non arrivato, quello segnato finito e i freschi
- *  che non sono arrivati con le spese dell'ultima settimana. Dispensa, uova, pane e carne senza scorta si suppongono
- *  in casa, perché potevi averli da prima del documento di consegna: se non ci sono, li segni finiti dalla Spesa.
- *  Senza nessuna scorta (documento mai caricato) vale solo il "non arrivato". */
+/** I prodotti senza scorta si suppongono in casa; senza nessuna scorta vale solo il "non arrivato". */
 export function mancaDa(spesa: Record<string, string> | null, scorte: Record<string, Scorta> | null, oggi: string) {
   const tracciate = !!scorte && Object.keys(scorte).length > 0;
   return (id: string) => {
@@ -39,10 +36,7 @@ export function mancaDa(spesa: Record<string, string> | null, scorte: Record<str
   };
 }
 
-/** Quanto usano di ogni prodotto i pasti del piano dopo "da" e fino ad "a" compreso, con la ricetta in uso e senza gli
- *  ingredienti che non hai mangiato. Conta i pasti dall'orario: se oggi dimentichi la spunta "mangiato" la scorta
- *  scende lo stesso. Nei giorni prima di "a" in cui ne hai segnato almeno uno ("fatto"), quelli non segnati li hai
- *  saltati e non contano; un giorno senza nessuna spunta resta contato per intero. In pausa conta solo il segnato. */
+/** Conta i pasti dall'orario; nei giorni passati con qualche spunta, e in pausa, solo quelli segnati. */
 export function consumoFra(
   da: Momento,
   a: Momento,
@@ -66,11 +60,7 @@ export function consumoFra(
   return tot;
 }
 
-/** Quando serve la spesa nuova: il primo pasto, da "adesso" in avanti, che non puoi fare con quello che hai, e cosa
- *  è finito per i pasti di quel giorno. "stima" è quanto hai adesso; i pasti usano la ricetta scelta o la proposta, che
- *  cambia da sola quando un prodotto finisce. Finito = non ne resta nemmeno un quarto della dose: le stime ballano di
- *  qualche grammo. I prodotti senza scorta si suppongono in casa, i piatti fuori casa non contano. Null = sei coperto
- *  per "giorni" giorni. */
+/** null = coperto per "giorni" giorni; finito = meno di un quarto della dose, perché le stime ballano. */
 export function primaMancanza(
   adesso: Momento,
   spesa: Record<string, string> | null,
@@ -84,7 +74,7 @@ export function primaMancanza(
   const finiti = new Set<string>();
   let primo: { data: string; pasto: PastoId } | null = null;
   for (let d = adesso.data < piano.inizio ? piano.inizio : adesso.data, n = 0; n < giorni && !primo; d = aggiungiGiorni(d, 1), n++) {
-    // In pausa non mangi dal piano: quei giorni non consumano e non fanno mancare niente.
+    // In pausa non mangi dal piano.
     for (const p of inPausa(d) ? [] : pastiDelGiorno(d)) {
       if (d === adesso.data && minutiDa(p.ora) <= adesso.minuti) continue;
       const manca = mancaDa(
@@ -105,11 +95,10 @@ export function primaMancanza(
   return primo && { ...primo, prodotti: [...finiti] };
 }
 
-/** Una porzione segnata fuori dai pasti: il giorno in cui l'hai mangiata e quando l'hai segnata (un istante). */
+/** giorno = quando l'hai mangiata; quando = l'istante in cui l'hai segnata. */
 export type FuoriPasto = { id: number; giorno: string; cibo: string; quando: string };
 
-/** Quanto usano di ogni prodotto i cibi fuori dai pasti dopo "dal" (un istante): segnati dopo, e mangiati quel giorno
- *  o dopo. Un cibo di ieri segnato dopo la consegna era già fuori dalla quantità che la consegna ha scritto. */
+/** Un cibo di prima di "dal", anche se segnato dopo, è già fuori dalla quantità della scorta. */
 export function consumoFuoriPasto(righe: FuoriPasto[], dal: string) {
   const cibi = new Map(piano.cibi.map((c) => [c.id, c]));
   const giornoDal = adessoNelFuso(new Date(dal)).data;
@@ -121,17 +110,14 @@ export function consumoFuoriPasto(righe: FuoriPasto[], dal: string) {
   return tot;
 }
 
-/** Giorni dopo i quali un fresco non conta più: comprato domenica, da giovedì la prossima spesa lo ricompra intero. */
+/** Dopo questi giorni un fresco non conta più per la prossima spesa. */
 export const GIORNI_FRESCO = 3;
 
-/** Quanto di quello che hai vale per la prossima spesa: tutto, tranne i freschi arrivati da più di GIORNI_FRESCO
- *  giorni, che per allora sono finiti o da buttare. Senza questo l'avanzo si sommerebbe di settimana in settimana. */
+/** Senza lo zero per i freschi vecchi l'avanzo si sommerebbe di settimana in settimana. */
 export const contaPerSpesa = (v: VoceSpesa, hai: number, giorni: number) =>
   v.fresco && giorni > GIORNI_FRESCO ? 0 : hai;
 
-/** Quanto usano i pasti nei 7 giorni dopo la prossima consegna (da adesso, se non hai detto quando arriva; dal primo
- *  giorno, se il piano non è partito), con le ricette scelte o della rotazione e tutto in casa. Appena passata una
- *  consegna vale ancora la settimana che parte adesso: è quella per cui hai comprato. */
+/** 7 giorni dalla prossima consegna; appena passata una consegna, da adesso: è la settimana per cui hai comprato. */
 export function fabbisognoSettimana(adesso: Momento, scelta: Scelta) {
   const c = prossimaConsegna(adesso);
   let da = c && Date.parse(c.data) - Date.parse(adesso.data) < 6 * 86_400_000 ? c : adesso;
@@ -139,18 +125,14 @@ export function fabbisognoSettimana(adesso: Momento, scelta: Scelta) {
   return consumoFra(da, { data: aggiungiGiorni(da.data, 7), minuti: da.minuti }, scelta);
 }
 
-/** Quanto serve di un prodotto per la prossima spesa. La quantità fissa della lista copre la settimana più pesante
- *  della rotazione: va bene per quello che si conserva, perché l'avanzo resta in scorta. I freschi non si tengono da
- *  una settimana all'altra, quindi vale quello che usano i pasti ("fabbisogno", null finché non si conosce). */
+/** v.q copre la settimana più pesante; i freschi non avanzano, quindi per loro vale il fabbisogno, se noto. */
 export const quantoServe = (v: VoceSpesa, fabbisogno: Record<string, number> | null) =>
   v.fresco && fabbisogno ? (fabbisogno[v.id] ?? 0) : v.q;
 
-/** Confezioni da comprare per arrivare a quanto serve ("serve": di solito quantoServe). */
 export const confezioniDaComprare = (v: VoceSpesa, hai: number, serve = v.q) =>
   Math.max(0, Math.ceil((serve - hai) / v.conf));
 
-/** "380 g" arrotondato a 10 g, oppure in pezzi per i prodotti contati a pezzi o con "pezzo". "esatto" = grammi
- *  precisi, anche per frutta e mozzarelle (le righe del documento di consegna). */
+/** esatto = grammi precisi, anche per i prodotti con pezzo > 1. */
 export const quantoMostrare = (v: VoceSpesa, q: number, esatto = false) =>
   v.pezzo === 1
     ? `${Math.round(q)}`

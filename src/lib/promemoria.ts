@@ -15,7 +15,7 @@ import {
 
 export type Promemoria = { chiave: string; minuti: number; titolo: string; testo: string; url: string };
 
-/** Ricetta scelta per quel pasto, o null se vale la proposta della rotazione. */
+/** null = vale la proposta della rotazione. */
 export type Scelta = (data: string, pasto: PastoId) => string | null | undefined;
 
 export function ricettaDi(
@@ -25,21 +25,18 @@ export function ricettaDi(
   manca?: (id: string) => boolean
 ) {
   const id = scelta(data, pasto.id);
-  // Vale anche una ricetta dello stesso pasto di un altro giorno (scambio); una che non esiste più torna alla rotazione.
-  // La scelta vince anche se manca qualcosa: lì il pasto lo segnala, non la cambia da solo.
+  // La scelta vince anche se manca qualcosa; una ricetta che non esiste più torna alla rotazione.
   return id && ricettaValida(pasto.id, id) ? id : ricettaProposta(data, pasto.opzioni, manca);
 }
 
-/** Le notifiche di un giorno, in ordine di orario. "allenamento" = quel giorno c'è una seduta prevista e non ancora
- *  fatta; "manca" dice quali prodotti non sono arrivati con la spesa. Quelli che l'utente ha spento non ci sono. */
+/** allenamento = quel giorno c'è una seduta prevista e non ancora fatta. */
 export function promemoriaDelGiorno(
   data: string,
   scelta: Scelta,
   allenamento: boolean,
   manca: (id: string) => boolean = () => false
 ): Promemoria[] {
-  // Prima dell'inizio niente avvisi; la sera prima del primo giorno solo quello dello scongelamento. Lo stesso in
-  // pausa: niente, e l'ultima sera quello che serve per il giorno in cui riprendi.
+  // Prima dell'inizio e in pausa niente avvisi, tranne lo scongelamento la sera prima di (ri)cominciare.
   if (data < aggiungiGiorni(piano.inizio, -1)) return [];
   const iniziato = data >= piano.inizio && !inPausa(data);
   const out: Promemoria[] = [];
@@ -47,8 +44,7 @@ export function promemoriaDelGiorno(
     const r = piano.ricette[ricettaDi(data, p, scelta, manca)];
     const ora = minutiDa(p.ora);
     const nonHai = mancantiDi(r, manca);
-    // Se il piatto chiede almeno 10 minuti, l'avviso arriva quando devi iniziare a cucinarlo. Non per il primo pasto
-    // del piano, quello del risveglio: prima dell'orario dormi, l'avviso arriva all'ora del pasto.
+    // Avviso all'ora di iniziare a cucinare, tranne il primo pasto: prima del risveglio dormi.
     const cucina = p.id !== piano.pasti[0].id && !r.fuori && r.minuti >= 10;
     out.push({
       chiave: p.id,
@@ -76,7 +72,6 @@ export function promemoriaDelGiorno(
     });
   }
 
-  // La spesa si ordina il giorno prima della consegna.
   if (piano.consegna && indiceGiorno(domani) === piano.consegna.giorno && !inPausa(domani)) {
     out.push({
       chiave: "spesa",

@@ -14,7 +14,7 @@ const voci = () => [
   { href: "/settimana", label: "Settimana", Icon: CalendarDays },
   null, // posto del tasto centrale
   { href: "/spesa", label: "Spesa", Icon: ShoppingCart },
-  // Senza allenamento nel piano il quinto posto va a Tu, che se no si apre da Oggi.
+  // Senza allenamento il posto va a Tu, che se no si apre solo da Oggi.
   piano.allenamento
     ? { href: "/allenamento", label: "Allena", Icon: Dumbbell }
     : { href: "/tu", label: "Tu", Icon: UserRound },
@@ -22,7 +22,6 @@ const voci = () => [
 
 const primo = (data: string) => ({ data, id: pastiDelGiorno(data)[0].id });
 
-/** Il pasto da cucinare adesso: il primo di oggi non ancora passato da più di un'ora, se no il primo di domani. */
 function pastoDaCucinare() {
   const { data, minuti } = adessoNelFuso();
   if (data < piano.inizio) return primo(piano.inizio);
@@ -33,12 +32,10 @@ function pastoDaCucinare() {
 const nessunaIscrizione = () => () => {};
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  // Tutti i dati arrivano da Supabase: la connessione parte insieme alla pagina, non alla prima richiesta.
   preconnect(process.env.NEXT_PUBLIC_SUPABASE_URL!, { crossOrigin: "anonymous" });
   const pathname = usePathname();
   const router = useRouter();
-  // L'HTML statico è costruito col piano predefinito, il browser usa quello dell'utente (usaProfilo): le pagine si
-  // disegnano solo nel browser e solo con un profilo, così nessuno vede per un attimo il piano di un altro.
+  // Solo nel browser e con un profilo: l'HTML statico ha il piano predefinito, non quello dell'utente.
   const nelBrowser = useSyncExternalStore(nessunaIscrizione, () => true, () => false);
   const [senzaProfilo, setSenzaProfilo] = useState(false);
 
@@ -46,15 +43,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
 
-  // Il profilo salvato qui si confronta col database a ogni avvio: se è cambiato (da un altro dispositivo, o non
-  // era mai stato letto) la pagina riparte con quello giusto. Se non si legge si va avanti con quello che c'è.
+  // Il profilo può essere cambiato da un altro dispositivo: si confronta col database a ogni avvio.
   useEffect(() => {
     leggiProfilo().then(
       (p) => {
         const uguale = () => JSON.stringify(p) === JSON.stringify(profiloLocale());
         if (uguale()) return;
         usaProfilo(p);
-        // Se il browser non l'ha salvato, ricaricare non servirebbe (e non finirebbe mai): si disegna così.
+        // Se il browser non l'ha salvato, ricaricare girerebbe all'infinito.
         if (uguale()) location.reload();
         else setSenzaProfilo(true);
       },
@@ -62,7 +58,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  // iOS chiude l'app in background (telefono bloccato) e la riapre dalla Home: si torna alla guida lasciata aperta.
+  // iOS chiude l'app in background e la riapre dalla Home: si torna alla guida aperta.
   useEffect(() => {
     const g = guidaDaRiaprire();
     if (g && g !== location.pathname + location.search) router.replace(g);

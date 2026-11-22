@@ -8,8 +8,7 @@ const GOCCIA = "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-
 // 8 bicchieri da 250 ml: i 2 litri al giorno del piano.
 const BICCHIERI = 8;
 
-// Il conto sta solo su questo telefono (localStorage): serve alla giornata, non è uno storico.
-// Per vederlo su più dispositivi va spostato su Supabase, come i pasti.
+// Solo su questo telefono: per vederlo su più dispositivi va spostato su Supabase.
 function leggi(giorno: string) {
   try {
     return Number(localStorage.getItem(`acqua:${giorno}`)) || 0;

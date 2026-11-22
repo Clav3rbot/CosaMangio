@@ -14,7 +14,7 @@ export function endpointValido(endpoint: string) {
   }
 }
 
-/** Manda la notifica a tutte le iscrizioni e cancella quelle che il browser ha revocato. Ritorna quante sono partite. */
+/** Cancella anche le iscrizioni che il browser ha revocato. */
 export async function inviaNotifica(
   sb: SupabaseClient,
   iscrizioni: { endpoint: string; subscription: PushSubscription }[],

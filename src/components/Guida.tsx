@@ -3,18 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Minus, Plus, Timer, X } from "lucide-react";
 
-/** timer: quelli che il passo propone (anche più di uno: "8 minuti in padella, pasta per 10 minuti"), secondi compresi. */
 export type PassoGuida = { titolo?: string; testo: string; timer?: { nome: string; secondi: number }[] };
 
 type TimerAttivo = { chiave: string; nome: string; fine: number; suonato: boolean };
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-// Fuori dal componente: avvia() gira solo al tocco, ma il lint non lo vede dentro un .map e lo prende per render.
+// Fuori dal componente: in avvia() il lint scambierebbe Date.now() per codice di render.
 const oraAttuale = () => Date.now();
 
-// Un secondo di suono (due bip e una pausa) da ripetere finché non premi OK. Un <audio> e non un AudioContext:
-// sull'iPhone l'AudioContext tace col tasto silenzioso, l'elemento audio no.
+// Un <audio> e non un AudioContext: sull'iPhone l'AudioContext tace col tasto silenzioso.
 function wavAllarme() {
   const hz = 8000;
   const b = new Uint8Array(44 + hz);
@@ -24,8 +22,8 @@ function wavAllarme() {
   v.setUint32(4, 36 + hz, true);
   scrivi(8, "WAVEfmt ");
   v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true); // PCM
-  v.setUint16(22, 1, true); // mono
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
   v.setUint32(24, hz, true);
   v.setUint32(28, hz, true);
   v.setUint16(32, 1, true);
@@ -40,10 +38,8 @@ function wavAllarme() {
   return "data:audio/wav;base64," + btoa(String.fromCharCode(...b));
 }
 
-// Passo e timer stanno sul telefono: se iOS chiude l'app in background (telefono bloccato), al rientro la guida
-// riparte da lì. Una per titolo: mentre i dati arrivano la pagina può mostrare per un attimo un'altra ricetta.
+// Una per titolo: mentre arrivano i dati la pagina può mostrare per un attimo un'altra ricetta.
 const SALVATE = "dieta:guide";
-// Una guida lasciata lì da più di 3 ore non è più quella in corso.
 const DURATA_SALVATA = 3 * 3600_000;
 type Salvata = { riapri: string; i: number; timers: TimerAttivo[]; durate: Record<string, number>; quando: number };
 
@@ -52,11 +48,10 @@ function salvate(): Record<string, Salvata> {
     const tutte: Record<string, Salvata> = JSON.parse(localStorage.getItem(SALVATE) ?? "{}");
     return Object.fromEntries(Object.entries(tutte).filter(([, s]) => Date.now() - s.quando < DURATA_SALVATA));
   } catch {
-    return {}; // navigazione privata o memoria bloccata: la guida non si ricorda
+    return {}; // navigazione privata o memoria bloccata
   }
 }
 
-/** La pagina della guida rimasta aperta, se c'è: l'app ci torna quando iOS la riapre da capo. */
 export function guidaDaRiaprire() {
   return Object.values(salvate()).sort((a, b) => b.quando - a.quando)[0]?.riapri ?? null;
 }
@@ -80,9 +75,7 @@ function sbloccaAllarme() {
     .catch(() => (a.muted = false));
 }
 
-/** Modalità passo-passo a tutto schermo: testo grande, schermo sempre acceso, più timer insieme.
- *  riapri = la pagina che riapre questa guida, se l'app viene chiusa mentre è aperta.
- *  ingredienti = tendina in cima a ogni passo, per pesare quello che non hai preparato prima. */
+/** riapri: la pagina che riapre questa guida se iOS chiude l'app mentre è aperta. */
 export default function Guida({
   titolo,
   riapri,
@@ -106,12 +99,11 @@ export default function Guida({
     const s = salvate()[titolo];
     return s?.riapri === riapri ? s : null;
   });
-  // -1 = schermata iniziale (ingredienti), se c'è.
+  // -1 = schermata iniziale.
   const [i, setI] = useState(salvata?.i ?? (intro ? -1 : 0));
-  // Ogni timer misura su un orario di fine: se iOS sospende la pagina, al rientro il conto è giusto.
+  // Orario di fine, non conto alla rovescia: iOS sospende la pagina in background.
   const [timers, setTimers] = useState<TimerAttivo[]>(salvata?.timers ?? []);
   const [ora, setOra] = useState(() => Date.now());
-  // Le durate cambiate con − e + prima di avviare, per chiave del timer.
   const [durate, setDurate] = useState<Record<string, number>>(salvata?.durate ?? {});
   // Timer ripresi dopo una chiusura: iOS li fa suonare solo dopo un tocco sullo schermo.
   const [muto, setMuto] = useState(!!salvata?.timers.length);
@@ -124,7 +116,6 @@ export default function Guida({
     }
   }, [riapri, titolo, i, timers, durate]);
 
-  // Chiudendo o finendo la guida non c'è più niente da riaprire.
   const esci = (azione: () => void) => {
     try {
       localStorage.removeItem(SALVATE);
@@ -134,7 +125,7 @@ export default function Guida({
     azione();
   };
 
-  // Schermo acceso finché la guida è aperta (iOS lo riattiva al rientro solo se lo richiediamo di nuovo).
+  // iOS rilascia il blocco dello schermo in background: va richiesto di nuovo al rientro.
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
     const richiedi = () => {
@@ -163,7 +154,6 @@ export default function Guida({
     return () => clearInterval(id);
   }, [timers]);
 
-  // Suona in continuo finché c'è un timer scaduto e non ancora chiuso con OK.
   useEffect(() => {
     if (!allarme) return;
     // muted: è lo sblocco appena partito dal tocco, che si mette in pausa da solo.
@@ -180,21 +170,18 @@ export default function Guida({
     setTimers([...timers, { chiave, nome, fine: adesso + secondi * 1000, suonato: false }]);
   };
 
-  // Un minuto in più anche a timer partito o già scaduto (la pasta non è ancora pronta).
   const unMinutoInPiu = (chiave: string) => {
     const adesso = oraAttuale();
     setOra(adesso);
     setTimers(timers.map((t) => (t.chiave === chiave ? { ...t, fine: Math.max(t.fine, adesso) + 60_000, suonato: false } : t)));
   };
 
-  // Cambiando passo spariscono i timer già scaduti; quelli in corso restano a schermo.
   const vai = (n: number) => {
     setTimers(timers.filter((t) => !t.suonato));
     setI(n);
   };
 
-  // <dialog> modale: la pagina sotto diventa inerte (tastiera e VoiceOver restano nella guida). Il focus va sul
-  // tasto principale, non sulla X che con Invio chiuderebbe la guida.
+  // Focus sul tasto principale: sulla X, Invio chiuderebbe la guida.
   const finestra = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = finestra.current;
@@ -212,7 +199,7 @@ export default function Guida({
       ref={finestra}
       className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none flex-col border-0 bg-bg p-0 text-ink open:flex"
       aria-label={titolo}
-      // Esc (o il gesto indietro): come la X. La pagina smonta la guida, che si chiude nel cleanup.
+      // Esc o gesto indietro: come la X; il dialog si chiude nel cleanup.
       onCancel={(e) => {
         e.preventDefault();
         esci(onChiudi);
@@ -261,7 +248,6 @@ export default function Guida({
                 const chiave = `${i}-${n}`;
                 if (timers.some((x) => x.chiave === chiave)) return null;
                 const secondi = durate[chiave] ?? t.secondi;
-                // Passi da un minuto, da 10 secondi per i timer brevi dell'allenamento.
                 const passoDurata = t.secondi >= 120 ? 60 : 10;
                 const cambia = (s: number) => setDurate({ ...durate, [chiave]: s });
                 return (

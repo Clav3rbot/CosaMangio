@@ -49,7 +49,7 @@ function Pasto() {
   const manca = useManca(spesa, adesso?.data ?? null);
   const riapri = `/pasto?d=${giorno}&p=${params.get("p")}`;
   const [guida, setGuida] = useState(() => params.get("cucina") === "1" || guidaDaRiaprire() === riapri);
-  // Spunte di preparazione della guida: le stesse nella schermata iniziale e nella tendina dei passi.
+  // Condivise fra schermata iniziale e tendina dei passi della guida.
   const [pronti, setPronti] = useState<string[]>([]);
 
   if (!slot) {
@@ -71,16 +71,15 @@ function Pasto() {
   const mangiati = senzaSaltati(r, saltati);
   const salva = (modifica: { ricetta?: string; fatto?: boolean; saltati?: string[] }) =>
     salvaPasto(giorno, slot.id as PastoId, modifica);
-  // Gli ingredienti saltati valgono per la ricetta in uso: la fisso, come quando segni il pasto mangiato.
+  // Fissa la ricetta: i saltati valgono per quella in uso.
   const salta = (nome: string) =>
     salva({ ricetta: rid, saltati: saltati.includes(nome) ? saltati.filter((n) => n !== nome) : [...saltati, nome] });
-  // Mangiato: la ricetta in uso diventa scelta, così non cambia più se poi cambia quello che hai.
+  // Fissa la ricetta: non cambia più se poi cambia quello che hai.
   const segna = (mangiato: boolean) => salva(mangiato ? { fatto: true, ricetta: rid } : { fatto: false });
   const nonHai = mancantiDi(r, manca);
-  // Una ricetta arrivata da uno scambio non è fra le opzioni del giorno: la mostro scelta, con le sue alternative.
+  // Una ricetta arrivata da uno scambio non è fra le opzioni del giorno.
   const opzioni = slot.opzioni.includes(rid) ? slot.opzioni : [...new Set([rid, ...sorelleDi(slot.id, rid), ...slot.opzioni])];
 
-  // Scambio: lo stesso pasto negli altri giorni di questa settimana, da oggi in poi e non ancora mangiato.
   const scambi =
     adesso && !fatto
       ? giorniDellaSettimana(lunediDi(giorno)).flatMap((d) => {
@@ -93,7 +92,7 @@ function Pasto() {
       : [];
   const rimedi = [
     ...(scambi.length ? ["scambiare il pasto con un altro giorno qui sotto"] : []),
-    // Le alternative usano quasi sempre gli stessi ingredienti: la propongo solo se una non usa quello che manca.
+    // Le alternative usano quasi sempre gli stessi ingredienti: solo se una evita quello che manca.
     ...(opzioni.some((id) => id !== rid && !mancantiDi(piano.ricette[id], manca).length)
       ? ["scegliere un'altra ricetta"]
       : []),
@@ -300,7 +299,7 @@ function Pasto() {
 
       {guida && r.passi.length > 0 && (
         <Guida
-          // Mentre arrivano scelte e scorte la ricetta può cambiare: la guida riparte da quella giusta.
+          // Mentre arrivano i dati la ricetta può cambiare: la guida riparte da quella giusta.
           key={r.nome}
           titolo={r.nome}
           riapri={riapri}

@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Stile da app fitness (riferimento: OpenNutriTracker): fondo crema, card bianche tonde, accento verde. */
 :root {
   --bg: #f4f1ea;
   --card: #ffffff;
@@ -15,7 +14,6 @@
   --fat: #d1543a;
   --carb-soft: #f6ead3;
   --fat-soft: #f8e1db;
-  /* Menu a tendina, campi numerici e barre di scorrimento seguono il tema del telefono */
   color-scheme: light dark;
 }
 
@@ -65,7 +63,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Spazio per la barra in basso e per la "home indicator" dell'iPhone. */
 .pb-nav {
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }

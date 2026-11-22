@@ -14,7 +14,7 @@ from html import escape
 from types import ModuleType, SimpleNamespace
 
 GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
-# I cinque pasti possibili, nell'ordine della giornata: il piano usa quelli che vuole (PASTI).
+# Nell'ordine della giornata: leggi_pasti controlla gli orari su quest'ordine.
 NOMI_PASTI = {"colazione": "Colazione", "pranzo": "Pranzo", "merenda": "Merenda", "cena": "Cena",
               "dopocena": "Dopo cena"}
 OBBLIGATORI = ["OBIETTIVI", "INIZIO", "PASTI", "ALIMENTI", "REPARTI", "PRODOTTI", "RICETTE", "SETTIMANA"]
@@ -83,7 +83,6 @@ def leggi_piano(path):
         controlla(reparto in p.reparti, f"SPESA_EXTRA, '{nome}': il reparto '{reparto}' non è in REPARTI")
     for pattern, chiave in p.scontrino:
         controlla(chiave in p.prodotti, f"SCONTRINO: '{pattern}' punta a '{chiave}', che non è in PRODOTTI")
-    # Ogni riga di prova del documento di consegna deve finire sul prodotto atteso.
     for riga, atteso in p.prove_scontrino:
         trovato = prodotto_scontrino(p, riga)
         controlla(trovato == atteso, f"PROVE_SCONTRINO, '{riga}': trovo {trovato} invece di {atteso}")
@@ -225,7 +224,6 @@ def leggi_settimana(p):
 # --- Conti ---
 
 def valori(a, q):
-    """Kcal e proteine di una quantità di un alimento (None = non conta)."""
     if a is None:
         return 0, 0
     if a["a_pezzo"]:
@@ -234,7 +232,7 @@ def valori(a, q):
 
 
 def totali(p, r):
-    """Kcal e proteine di una ricetta: i suoi ingredienti, meno quelli di un altro pasto che salti ("toglie")."""
+    """Sottrae gli ingredienti di "toglie", un altro pasto che salti."""
     kcal = prot = 0
     for segno, voci in ((1, r["ingredienti"]), (-1, r["toglie"])):
         for nome, q, _ in voci:
@@ -245,7 +243,7 @@ def totali(p, r):
 
 
 def prodotti_di(p, r):
-    """Quanto usa la ricetta di ogni prodotto della spesa (grammi, o pezzi per i prodotti a pezzo)."""
+    """Grammi, o pezzi per i prodotti a pezzo."""
     qta = {}
     for nome, q, _ in r["ingredienti"]:
         a = p.alimenti[nome]
@@ -266,9 +264,8 @@ def prodotto_scontrino(p, descrizione):
 
 
 def fabbisogno(p):
-    """Quantità a settimana per prodotto: il piatto del piano più, per ogni prodotto, l'alternativa che ne usa di
-    più in quel pasto. I ripieghi e i piatti fuori casa scelti al posto di uno del piano non contano."""
-    need, oltre = {}, {}  # oltre: quanto in più possono chiedere le alternative dei prodotti una_confezione
+    """Piatto del piano più, per prodotto, l'alternativa che ne usa di più; ripieghi e fuori casa esclusi."""
+    need, oltre = {}, {}  # oltre: extra delle alternative per i prodotti una_confezione
     for _, _, base, alternative in pasti_del_giorno(p):
         usa = prodotti_di(p, base)
         for chiave, q in usa.items():
@@ -298,8 +295,7 @@ def righe_spesa(p):
         row = {"id": chiave, "reparto": v["reparto"], "nome": v["nome"],
                "serve": f"{qty} g" if pezzo is None else str(qty),
                "formato": f"{math.ceil(need[chiave] / v['conf'])} × {v['conf_nome']}",
-               # Per l'app: quanto serve e quanto c'è in una confezione, nell'unità delle ricette (pezzi per i
-               # prodotti a pezzo, grammi per tutto il resto; "pezzo" = grammi di un pezzo, per mostrarli).
+               # Per l'app, nell'unità delle ricette; "pezzo" = grammi di un pezzo, per mostrarli.
                "q": need[chiave], "conf": v["conf"], "confNome": v["conf_nome"]}
         if pezzo:
             row["pezzo"] = pezzo
@@ -331,7 +327,7 @@ def controlla_fasce(p):
         bk, bp = totali(p, base)
         for alt in alternative:
             if alt["fuori"]:
-                continue  # fuori casa al posto di un piatto del piano: non sai cosa mangi, non si conta
+                continue  # fuori casa: non sai cosa mangi
             ak, ap = totali(p, alt)
             kcal, prot = giorni[giorno][0] - bk + ak, giorni[giorno][1] - bp + ap
             controlla(kmin <= kcal <= kmax, f"{alt['nome']}, {giorno}: la giornata va a {kcal:.0f} kcal")
@@ -357,7 +353,7 @@ def ricetta_json(p, r):
         out["ripiego"] = True
     if r["nota"]:
         out["nota"] = r["nota"]
-    # Per ogni ingrediente kcal, proteine e quanto usa del prodotto: l'app li toglie quando segni che non l'hai mangiato.
+    # L'app li sottrae quando segni un ingrediente come non mangiato.
     out["valori"] = []
     for nome, q, _ in r["ingredienti"]:
         a = p.alimenti[nome]

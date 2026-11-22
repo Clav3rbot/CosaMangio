@@ -18,12 +18,10 @@ import {
 
 const LETTERE = ["L", "M", "M", "G", "V", "S", "D"];
 
-/** Calendario del mese: per ogni giorno la quota di pasti fatti (anello, cerchio pieno se tutti) e l'allenamento (punto). */
 export default function Mese({ oggi }: { oggi: string }) {
   const [mese, setMese] = useState(() => giornoDelPiano(oggi).slice(0, 7));
   const { dati, errore } = useMese(mese);
   const giorni = giorniDelMese(mese);
-  // Si contano solo i giorni del piano già arrivati: prima di piano.inizio e nel futuro non c'è niente da seguire.
   const nelPiano = (d: string) => d >= piano.inizio && d <= oggi;
   const completo = (d: string) => nelPiano(d) && (dati?.fatti[d] ?? 0) >= pastiDelGiorno(d).length;
   const passati = giorni.filter(nelPiano);

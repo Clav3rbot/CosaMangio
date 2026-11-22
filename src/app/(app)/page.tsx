@@ -43,7 +43,6 @@ function Oggi() {
   const oggi = adesso?.data ?? null;
   const giorno = params.get("d") ?? (oggi && giornoDelPiano(oggi));
   const { dati, errore: erroreSettimana, salvaPasto } = useSettimana(giorno ? lunediDi(giorno) : null);
-  // I cibi fuori dai pasti si segnano per oggi e per i giorni passati, non per quelli che devono ancora venire.
   const fuori = useFuoriPasto(giorno && oggi && giorno <= oggi ? giorno : null);
   const errore = erroreSettimana ?? fuori.errore;
   const { stato: spesa } = useSpesa();
@@ -52,7 +51,7 @@ function Oggi() {
 
   if (!giorno || !oggi || !adesso) return <div className="h-dvh" />;
 
-  // kcal e prot = quello che mangi davvero, senza gli ingredienti saltati; quelli della ricetta sono l'obiettivo.
+  // kcal e prot senza i saltati; quelli della ricetta sono l'obiettivo.
   const pasti = pastiCon(giorno, dati, manca).map((p) => ({ ...p, ...senzaSaltati(p.ricetta, p.saltati) }));
   const cibiFuori = fuori.righe.flatMap((r) => piano.cibi.filter((c) => c.id === r.cibo));
   const kcalFuori = cibiFuori.reduce((s, c) => s + c.kcal, 0);
@@ -67,7 +66,7 @@ function Oggi() {
   const giorniAllenamento = giorniSedute(lunediDi(giorno), dati?.spostate);
   const giornoAllenamento = giorniAllenamento.includes(giorno);
   const allenatoOggi = !!dati?.allenamenti.includes(giorno);
-  // "Stasera in frigo" parla di stasera, qualunque giorno stai guardando, come l'avviso della sera.
+  // Da oggi, non dal giorno guardato: "Stasera in frigo" parla di stasera.
   const domani = aggiungiGiorni(oggi, 1);
   const inFrigo =
     domani < piano.inizio
@@ -109,7 +108,7 @@ function Oggi() {
               key={d}
               href={d === oggi ? "/" : `/?d=${d}`}
               aria-current={scelto ? "date" : undefined}
-              // L'anello è solo grafico: il conto lo legge VoiceOver, come nel calendario del mese.
+              // L'anello è solo grafico: il conto va a VoiceOver.
               aria-label={`${dataLunga(d)}: ${segnati} pasti su ${lista.length}`}
               className="flex flex-col items-center gap-1 text-xs text-muted"
             >
@@ -270,7 +269,7 @@ function Oggi() {
             <BottoneFatto
               fatto={p.fatto}
               nome={p.ricetta.nome}
-              // Mangiato: la ricetta in uso diventa scelta, così non cambia più se poi cambia quello che hai.
+              // Fissa la ricetta: non cambia più se poi cambia quello che hai.
               onClick={() => salvaPasto(giorno, p.id, p.fatto ? { fatto: false } : { fatto: true, ricetta: p.rid })}
             />
           </li>

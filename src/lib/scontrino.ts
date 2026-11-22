@@ -12,7 +12,7 @@ export async function leggiDocumento(file: Blob): Promise<Documento> {
   const linee: string[] = [];
   for (let n = 1; n <= pdf.numPages; n++) {
     const { items } = await (await pdf.getPage(n)).getTextContent();
-    // Ricompone le righe della tabella: pezzi alla stessa altezza (±2 punti), letti da sinistra a destra.
+    // Stessa riga = stessa altezza (±2 punti), poi da sinistra a destra.
     const pezzi = items
       .flatMap((it) => ("str" in it && it.str.trim() ? [{ x: it.transform[4], y: it.transform[5], s: it.str.trim() }] : []))
       .sort((a, b) => b.y - a.y);
@@ -29,7 +29,7 @@ export async function leggiDocumento(file: Blob): Promise<Documento> {
   return interpretaLinee(linee);
 }
 
-/** Dalle righe di testo: gli articoli consegnati e quelli non consegnati. Gli omaggi sono gadget e si saltano. */
+/** Gli omaggi sono gadget e si saltano. */
 export function interpretaLinee(linee: string[]): Documento {
   let sezione: "articoli" | "omaggi" | "mancanti" | null = null;
   let data: string | null = null;
@@ -51,22 +51,18 @@ export function interpretaLinee(linee: string[]): Documento {
 
 const regole = piano.scontrino.map(([re, id]) => [new RegExp(re), id] as const);
 
-/** Quello che l'utente ha già sistemato per un codice articolo: il prodotto ("" = non è nella lista) e, se l'ha
- *  scritto, quanto c'è in una confezione. */
+/** Scelta dell'utente per un codice articolo; prodotto "" = non è nella lista. */
 export type NomeArticolo = { prodotto: string; grammi: number | null };
 
-/** Il prodotto della lista per una riga: prima quello che l'utente ha già scelto per quel codice, poi le parole
- *  chiave del generatore. undefined = da chiedere. */
+/** null = non è nella lista, undefined = da chiedere. */
 export function prodottoRiga(r: RigaScontrino, nomi: Record<string, NomeArticolo>): string | null | undefined {
   if (r.codice in nomi) return nomi[r.codice].prodotto || null;
   return regole.find(([re]) => re.test(r.descrizione.toUpperCase()))?.[1];
 }
 
-/** Numero di confezioni della riga (1 se è pesata a kg). */
 export const confezioniRiga = (r: RigaScontrino) => (/Kg$/i.test(r.qta) ? 1 : Number(r.qta));
 
-/** Quanto è arrivato, nell'unità delle ricette. "stimata" = il peso non è scritto da nessuna parte: vale la confezione
- *  tipica. "perConfezione" = quanto c'è in una confezione di quell'articolo, se si sa (imparato o in piano.articoli). */
+/** Nell'unità delle ricette. stimata = peso non scritto da nessuna parte, vale la confezione tipica. */
 export function quantitaRiga(
   r: RigaScontrino,
   v: VoceSpesa,
@@ -77,7 +73,7 @@ export function quantitaRiga(
   const n = confezioniRiga(r);
   if (perConfezione && v.pezzo !== 1) return { q: n * perConfezione, stimata: false };
   const d = r.descrizione.toUpperCase();
-  // "4X100", "75GX2", "80X8", "33X3": il numero più piccolo sono i pezzi, l'altro il peso di un pezzo.
+  // "4X100", "75GX2": il numero più piccolo sono i pezzi, l'altro il peso di un pezzo.
   const per = d.match(/(\d+)\s*G?\s*X\s*(\d+)/);
   const conta = per ? Math.min(+per[1], +per[2]) : Number((d.match(/\bX\s*(\d+)\b/) ?? d.match(/^(\d+)\s+\D/))?.[1] ?? 0);
   const g = d.match(/(\d+(?:[.,]\d+)?)\s*(KG|G)\b/);

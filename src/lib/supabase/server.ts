@@ -18,8 +18,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // chiamato da un Server Component: il refresh dei cookie
-            // è gestito dal middleware
+            // Da un Server Component non si scrivono cookie: li rinnova il proxy.
           }
         },
       },

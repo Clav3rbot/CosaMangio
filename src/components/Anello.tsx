@@ -1,4 +1,4 @@
-/** Anello di avanzamento (0-1), con il contenuto al centro. */
+/** valore: da 0 a 1. */
 export default function Anello({
   valore,
   size = 180,

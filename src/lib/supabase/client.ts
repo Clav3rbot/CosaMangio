@@ -7,14 +7,7 @@ export function createClient() {
   );
 }
 
-/**
- * Id dell'utente per riempire `user_id` negli insert.
- * Legge la sessione già in memoria invece di interrogare l'Auth server come
- * fa getUser(): risparmia un round-trip prima di ogni salvataggio. Il valore
- * non deve essere "fidato" a livello di sicurezza, ma non serve che lo sia:
- * la policy RLS `with check (auth.uid() = user_id)` rifiuta comunque una riga
- * con un id diverso da quello del JWT.
- */
+/** Sessione locale, non verificata: basta, la RLS `with check (auth.uid() = user_id)` rifiuta un id diverso dal JWT. */
 export async function getCurrentUserId(): Promise<string | null> {
   const supabase = createClient();
   const {

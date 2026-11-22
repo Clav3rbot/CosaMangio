@@ -1,8 +1,7 @@
 import dati from "@/data/piano.json";
 import altriPiani from "@/data/altri-piani";
 
-// piano.json lo genera scripts/build_dieta.py da piano/mio.py: le ricette si cambiano lì, non a mano qui.
-// Altri utenti possono avere un piano loro (src/data/altri-piani.ts): vedi usaPiano.
+// piano.json lo genera scripts/build_dieta.py da piano/mio.py: non modificarlo a mano.
 export type PastoId = "colazione" | "pranzo" | "merenda" | "cena" | "dopocena";
 export type Ricetta = {
   nome: string;
@@ -11,29 +10,27 @@ export type Ricetta = {
   minuti: number;
   kcal: number;
   prot: number;
-  /** Quanto usa di ogni prodotto della spesa (grammi o pezzi), per id: porzioni, scongelamento, prodotti mancanti. */
+  /** id del prodotto della spesa -> quantità usata, in grammi o pezzi. */
   prodotti: Record<string, number>;
-  /** Per ogni ingrediente, nello stesso ordine: kcal, proteine e quanto usa del prodotto della spesa. */
+  /** Uno per ingrediente, nello stesso ordine. */
   valori: { kcal: number; prot: number; prodotto?: string; q?: number }[];
   fuori: boolean;
-  /** Per quando manca un prodotto: fuori dalla rotazione e dalla spesa fissa, proposta solo se serve. */
+  /** Fuori dalla rotazione e dalla spesa fissa: proposta solo se manca un prodotto. */
   ripiego?: boolean;
-  /** Frase mostrata nella pagina del pasto (per i piatti fuori casa, per esempio). */
   nota?: string;
 };
 export type Esercizio = { nome: string; dettaglio: string; secondi?: number };
 export type Allenamento = {
-  /** Giorni di ogni settimana, 0 = lunedì, se non li sposti dall'app. */
+  /** 0 = lunedì. */
   giorni: number[];
   ora: string;
-  /** "15 minuti, a casa, senza attrezzi" */
   descrizione: string;
   riscaldamento?: Esercizio;
   circuito: Esercizio[];
-  /** Cosa fare negli esercizi senza "secondi" ("fino a 1-2 dal cedimento"). */
+  /** Per gli esercizi senza "secondi". */
   ripetizioni: string;
   giri: number;
-  /** Secondi di pausa fra un esercizio e l'altro. */
+  /** In secondi. */
   pausa: number;
   progressione: string[];
 };
@@ -43,21 +40,20 @@ export type VoceSpesa = {
   nome: string;
   serve: string;
   formato: string;
-  /** Solo carne e pane, che all'arrivo si porzionano e si congelano: dove resta quello di oggi e di domani. */
+  /** Solo per ciò che si porziona e congela all'arrivo: dove tenere la parte di oggi e domani. */
   tieni?: string;
-  /** Come va in freezer se non a porzioni dei pasti ("interi" per il pane). */
+  /** Come congelarlo se non a porzioni dei pasti. */
   congela?: string;
-  /** Solo quello che sta in freezer: il nome breve dell'avviso della sera prima ("pesce"). */
+  /** Solo per il freezer: nome breve nell'avviso della sera prima. */
   scongela?: string;
-  /** Quanto serve a settimana e quanto c'è in una confezione, nell'unità delle ricette (pezzi se "pezzo" è 1,
-   *  se no grammi; "pezzo" > 1 = grammi di un pezzo, per mostrarli come pezzi). */
+  /** q a settimana, conf per confezione: pezzi se pezzo è 1, se no grammi (pezzo > 1 = grammi di un pezzo). */
   q: number;
   conf: number;
   confNome: string;
   pezzo?: number;
-  /** Tonno e legumi: la confezione si conta a scatolette, col peso sgocciolato. */
+  /** La confezione si conta a scatolette, col peso sgocciolato. */
   sgocciolato?: boolean;
-  /** Dura pochi giorni (verdura, banane, affettati, pasta fresca): l'avanzo non vale per la spesa dopo. */
+  /** Dura pochi giorni: l'avanzo non vale per la spesa dopo. */
   fresco?: boolean;
 };
 export type Cibo = {
@@ -69,11 +65,10 @@ export type Cibo = {
   prodotti: Record<string, number>;
 };
 type Piano = {
-  /** Fasce di ogni giornata, [minimo, massimo]. */
+  /** Per giornata, [minimo, massimo]. */
   obiettivi: { kcal: [number, number]; proteine: [number, number] };
-  /** Primo giorno del piano (YYYY-MM-DD, un lunedì). */
+  /** YYYY-MM-DD, un lunedì. */
   inizio: string;
-  /** Fuso orario di pasti e notifiche ("Europe/Rome"). */
   fuso: string;
   /** null = il piano non ha allenamento. */
   allenamento: Allenamento | null;
@@ -81,43 +76,41 @@ type Piano = {
   pasti: { id: PastoId; nome: string; ora: string }[];
   settimana: { giorno: string; pasti: Partial<Record<PastoId, string[]>> }[];
   ricette: Record<string, Ricetta>;
-  /** Cibi da segnare fuori dai pasti, una porzione per tocco. */
+  /** Cibi fuori pasto: un tocco = una porzione. */
   cibi: Cibo[];
   spesa: VoceSpesa[];
   spesaExtra: { reparto: string; nome: string }[];
   reparti: string[];
-  /** Documento di consegna: [espressione sulla descrizione, prodotto], vince la prima che combacia. */
+  /** [espressione sulla descrizione del documento di consegna, prodotto]: vince la prima che combacia. */
   scontrino: [string, string][];
-  /** Codice articolo Esselunga -> quantità di una confezione, nell'unità delle ricette (il documento non la scrive). */
+  /** Codice articolo -> quantità di una confezione nell'unità delle ricette: il documento non la scrive. */
   articoli: Record<string, number>;
   note: { titolo: string; testo: string }[];
-  /** Questi tre non stanno nel JSON: li scrive usaPiano dalle preferenze dell'utente. */
+  /** Questi tre non sono nel JSON: li scrive usaPiano dalle preferenze. */
   avvisi: { scongela: string; ordina: string; muti: string[] };
   consegna: Consegna | null;
   pause: Pausa[];
 };
-/** Quando arriva la spesa di solito: giorno (0 = lunedì) e ora. */
+/** giorno: 0 = lunedì. */
 export type Consegna = { giorno: number; ora: string };
-/** Giorni senza piano, estremi compresi (YYYY-MM-DD); senza "al" la pausa è ancora aperta. */
+/** Estremi compresi (YYYY-MM-DD); senza "al" la pausa è ancora aperta. */
 export type Pausa = { dal: string; al?: string };
 
-/** Quello che l'utente cambia del suo piano dalla pagina Tu. Senza un campo vale il piano. */
+/** Senza un campo vale il piano. */
 export type Preferenze = {
-  /** L'ora di un pasto ("HH:MM"), per id. */
   orari?: Partial<Record<PastoId, string>>;
-  /** L'ora dell'avviso della sera per lo scongelamento (22:30 se manca) e quella della seduta. */
+  /** Ore dell'avviso di scongelamento e della seduta. */
   scongela?: string;
   allenamento?: string;
   /** Avvisi spenti: l'id di un pasto, "scongela", "allenamento", "spesa". */
   muti?: string[];
-  /** La consegna della spesa: il giorno prima, all'ora "ordina" (12:00 se manca), parte l'avviso di ordinarla. */
+  /** ordina = ora dell'avviso di ordinare, il giorno prima della consegna. */
   consegna?: Consegna;
   ordina?: string;
-  /** Le pause, anche quelle finite: servono al conto delle scorte. In pausa niente avvisi, e le scorte non scendono. */
+  /** Anche quelle finite: servono al conto delle scorte. */
   pause?: Pausa[];
 };
-/** La riga dell'utente nella tabella profili: quale piano segue ("" = src/data/piano.json, se no un nome di
- *  src/data/altri-piani.ts) e le sue preferenze. */
+/** piano: "" = piano.json, se no una chiave di altri-piani. */
 export type Profilo = { piano: string; preferenze: Preferenze };
 
 const SCONGELA = "22:30";
@@ -125,29 +118,23 @@ const ORDINA = "12:00";
 export const oraValida = (v: unknown): v is string => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 const dataValida = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d\d-\d\d$/.test(v);
 
-/** Sempre lo stesso oggetto: usaPiano ne cambia il contenuto, così lo vede cambiare anche chi lo ha importato. */
+/** Sempre lo stesso oggetto: usaPiano lo muta, così chi lo ha importato vede il cambio. */
 export const piano = {} as Piano;
 let voci: Map<string, VoceSpesa>;
-// Le ricette di ogni pasto in tutta la settimana: un pasto scambiato fra due giorni resta valido.
+// Su tutta la settimana: un pasto scambiato fra due giorni resta valido.
 let perPasto: Map<PastoId, Set<string>>;
 let fmtFuso: Intl.DateTimeFormat;
 
-/**
- * Sceglie il piano, ci applica le preferenze dell'utente e ricalcola quello che ne deriva. Nel browser vale per tutta
- * la pagina: parte dal profilo salvato in questo browser (vedi usaProfilo). Sul server il cron lo cambia per ogni
- * utente subito prima dei calcoli sincroni: lì non vale niente di calcolato una volta per modulo, tutto si legge
- * dall'oggetto piano. Le preferenze arrivano dal database: quello che non è un'ora o una data valida si ignora.
- */
+/** Sul server il cron lo chiama per ogni utente: niente va calcolato una volta per modulo, si legge da piano. */
 export function usaPiano(nome = "", preferenze: Preferenze = {}) {
   for (const k of Object.keys(piano)) delete (piano as Record<string, unknown>)[k];
-  // Nome e preferenze li può scrivere l'utente nella sua riga: un nome che non è un piano ("constructor") vale il
-  // predefinito, e preferenze che non sono un oggetto (null) valgono nessuna preferenza.
+  // Nome e preferenze vengono dalla riga dell'utente: non sono affidabili.
   const pref: Preferenze = preferenze && typeof preferenze === "object" && !Array.isArray(preferenze) ? preferenze : {};
   const base = (Object.hasOwn(altriPiani, nome) ? altriPiani[nome] : dati) as Omit<Piano, "avvisi" | "consegna" | "pause">;
   const c = pref.consegna;
   const ora = (v: unknown, solita: string) => (oraValida(v) ? v : solita);
   const pasti = base.pasti.map((p) => ({ ...p, ora: ora(pref.orari?.[p.id], p.ora) }));
-  // I pasti restano in ordine di orario, come li vuole il resto del codice: se no valgono quelli del piano.
+  // Il resto del codice vuole i pasti in ordine di orario.
   const inOrdine = pasti.every((p, i) => !i || pasti[i - 1].ora < p.ora);
   Object.assign(piano, base, {
     pasti: inOrdine ? pasti : base.pasti,
@@ -180,8 +167,7 @@ export function usaPiano(nome = "", preferenze: Preferenze = {}) {
 
 const CHIAVE_PROFILO = "dieta:profilo";
 
-/** Il profilo salvato in questo browser. null = mai letto dal database (o sul server): AppShell lo legge prima di
- *  disegnare le pagine. */
+/** null = mai letto dal database, o sul server. */
 export function profiloLocale(): Profilo | null {
   if (typeof document === "undefined") return null;
   try {
@@ -191,13 +177,13 @@ export function profiloLocale(): Profilo | null {
   }
 }
 
-/** Salva il profilo in questo browser e lo applica: da qui parte la pagina la prossima volta. null lo dimentica. */
+/** null cancella il profilo salvato nel browser. */
 export function usaProfilo(p: Profilo | null) {
   try {
     if (p) localStorage.setItem(CHIAVE_PROFILO, JSON.stringify(p));
     else localStorage.removeItem(CHIAVE_PROFILO);
   } catch {
-    // Memoria del browser piena o spenta: il profilo vale lo stesso, fino alla prossima ricarica.
+    // Memoria del browser piena o spenta: il profilo vale fino alla ricarica.
   }
   usaPiano(p?.piano, p?.preferenze);
 }
@@ -207,7 +193,7 @@ export function usaProfilo(p: Profilo | null) {
   usaPiano(p?.piano, p?.preferenze ?? {});
 }
 
-/** Kcal, proteine e prodotti di una ricetta senza gli ingredienti che non hai mangiato (per nome). */
+/** saltati = nomi degli ingredienti non mangiati. */
 export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
   let { kcal, prot } = r;
   const prodotti = { ...r.prodotti };
@@ -221,14 +207,12 @@ export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
   return { kcal: Math.max(0, Math.round(kcal)), prot: Math.max(0, Math.round(prot)), prodotti };
 }
 
-/** Cosa spostare dal freezer al frigo la sera prima per una ricetta ("pesce"), saltando quello che non hai. */
 export const daScongelare = (r: Ricetta, manca: (id: string) => boolean = () => false) =>
   Object.keys(r.prodotti).flatMap((id) => {
     const nome = voci.get(id)?.scongela;
     return nome && !manca(id) ? [nome] : [];
   });
 
-/** I prodotti della ricetta che non hai, per nome ("merluzzo o platessa"). */
 export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean) =>
   Object.keys(r.prodotti)
     .filter(manca)
@@ -236,18 +220,17 @@ export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean) =>
 
 export const ricettaValida = (pasto: PastoId, id: string) => !!perPasto.get(pasto)?.has(id);
 
-/** Le ricette fra cui si sceglie insieme a questa, nel giorno da cui viene: una ricetta arrivata da uno scambio porta
- *  con sé le sue alternative. */
+/** Le alternative del giorno da cui viene la ricetta: uno scambio se le porta dietro. */
 export const sorelleDi = (pasto: PastoId, id: string) =>
   piano.settimana.map((g) => g.pasti[pasto] ?? []).find((o) => o.includes(id)) ?? [id];
 
-/** Data (YYYY-MM-DD) e minuti dalla mezzanotte nel fuso del piano: il server di Vercel gira in UTC. */
+/** Data e minuti dalla mezzanotte nel fuso del piano: il server gira in UTC. */
 export function adessoNelFuso(d = new Date()) {
   const p = Object.fromEntries(fmtFuso.formatToParts(d).map((x) => [x.type, x.value]));
   return { data: `${p.year}-${p.month}-${p.day}`, minuti: Number(p.hour) * 60 + Number(p.minute) };
 }
 
-// Le date viaggiano come stringhe YYYY-MM-DD; a mezzogiorno UTC nessun fuso le sposta di giorno.
+// A mezzogiorno UTC nessun fuso sposta una data YYYY-MM-DD di giorno.
 const utc = (data: string) => new Date(`${data}T12:00:00Z`);
 
 export function aggiungiGiorni(data: string, n: number) {
@@ -256,16 +239,15 @@ export function aggiungiGiorni(data: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
-/** 0 = lunedì, 6 = domenica */
+/** 0 = lunedì. */
 export const indiceGiorno = (data: string) => (utc(data).getUTCDay() + 6) % 7;
 export const lunediDi = (data: string) => aggiungiGiorni(data, -indiceGiorno(data));
 export const giorniDellaSettimana = (lunedi: string) =>
   Array.from({ length: 7 }, (_, i) => aggiungiGiorni(lunedi, i));
 
-/** Il giorno è dentro una pausa: niente avvisi, e delle scorte scende solo quello che segni mangiato. */
 export const inPausa = (data: string) => piano.pause.some((p) => p.dal <= data && (!p.al || data <= p.al));
 
-/** La prossima consegna della spesa da "adesso" in poi, come data e minuti. null = l'utente non l'ha detta. */
+/** null = l'utente non ha indicato la consegna. */
 export function prossimaConsegna(adesso: { data: string; minuti: number }) {
   if (!piano.consegna) return null;
   const minuti = minutiDa(piano.consegna.ora);
@@ -281,12 +263,9 @@ export function pastiDelGiorno(data: string) {
   });
 }
 
-/** Proposta della rotazione: cambia ogni lunedì. La settimana di piano.inizio è la 0, cioè i piatti del PDF. Se il piatto
- *  della rotazione usa qualcosa che non hai ("manca"), vale il primo che dopo di lui puoi fare con quello che hai,
- *  ripieghi compresi, meglio se con la stessa carne o pesce dal freezer: la sera prima l'avviso te l'ha fatto
- *  scongelare. Se non ce n'è nessuno resta quello della rotazione, con il suo "Non hai". */
+/** Ruota ogni lunedì; se manca qualcosa, il primo fattibile dopo, meglio se con lo stesso scongelato. */
 export function ricettaProposta(data: string, opzioni: string[], manca: (id: string) => boolean = () => false) {
-  // I piatti fuori casa si scelgono a mano: la rotazione li salta, a meno che il pasto sia solo quello.
+  // I piatti fuori casa si scelgono a mano, salvo che il pasto abbia solo quelli.
   const cucinati = opzioni.filter((id) => !piano.ricette[id].fuori);
   const giro = cucinati.length ? cucinati : opzioni;
   const rotazione = giro.filter((id) => !piano.ricette[id].ripiego);
@@ -298,7 +277,6 @@ export function ricettaProposta(data: string, opzioni: string[], manca: (id: str
   return puoi.find((id) => freezer(id) === freezer(rotazione[k])) ?? puoi[0] ?? rotazione[k];
 }
 
-/** Il giorno da mostrare di default: oggi, o il primo giorno del piano se non è ancora partito. */
 export const giornoDelPiano = (oggi: string) => (oggi < piano.inizio ? piano.inizio : oggi);
 
 export function minutiDa(ora: string) {
@@ -309,36 +287,30 @@ export function minutiDa(ora: string) {
 const fmtData = new Intl.DateTimeFormat("it-IT", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
 const fmtBreve = new Intl.DateTimeFormat("it-IT", { timeZone: "UTC", day: "numeric", month: "short" });
 
-/** "giovedì 12 novembre" */
 export const dataLunga = (data: string) => fmtData.format(utc(data));
-/** "12 nov" */
 export const dataBreve = (data: string) => fmtBreve.format(utc(data));
 
 const fmtMese = new Intl.DateTimeFormat("it-IT", { timeZone: "UTC", month: "long", year: "numeric" });
 
-/** "novembre 2026", da un mese scritto YYYY-MM */
 export const nomeMese = (mese: string) => fmtMese.format(utc(`${mese}-01`));
 
-/** Il mese (YYYY-MM) che viene n mesi dopo, o prima se n è negativo. */
 export function spostaMese(mese: string, n: number) {
   const d = utc(`${mese}-01`);
   d.setUTCMonth(d.getUTCMonth() + n);
   return d.toISOString().slice(0, 7);
 }
 
-/** Tutti i giorni di un mese (YYYY-MM). */
 export function giorniDelMese(mese: string) {
   const giorni: string[] = [];
   for (let d = `${mese}-01`; d.startsWith(mese); d = aggiungiGiorni(d, 1)) giorni.push(d);
   return giorni;
 }
 
-/** I timer di un passaggio, in minuti: ogni numero seguito da minuto/minuti ("cuoci per 10 minuti"). */
 export function minutiNelPasso(passo: string) {
   return [...passo.matchAll(/(\d+)\s*minut[oi]/g)].map((m) => Number(m[1]));
 }
 
-// In ordine di precedenza: se una frase nomina più cibi vince il primo della lista (penne prima dei broccoli).
+// L'ordine conta: se una frase nomina più cibi vince il primo.
 const CIBI: [RegExp, string][] = [
   [/ripos/i, "Riposo"],
   [/occhio di bue/i, "Uova all'occhio"],
@@ -382,11 +354,6 @@ const CIBI: [RegExp, string][] = [
 
 const cibo = (testo: string) => CIBI.find(([re]) => re.test(testo))?.[1];
 
-/**
- * I timer di un passaggio con un nome che dice cosa stai cuocendo ("Spaghetti", "Patate in forno").
- * Il cibo si cerca prima nel pezzo di frase che precede il numero, poi nel resto della frase, poi nel
- * passaggio intero, infine nel nome della ricetta.
- */
 export function timerNelPasso(passo: string, ricetta: string) {
   const trovati = [...passo.matchAll(/(\d+)\s*minut[oi]/g)];
   return trovati.map((m, k) => {

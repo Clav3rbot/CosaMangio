@@ -1,11 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Senza sessione si va al login.
 export async function proxy(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname.startsWith("/login");
 
-  // Fast path: senza cookie di sessione non c'è niente da verificare.
   const hasAuthCookie = request.cookies
     .getAll()
     .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
@@ -59,8 +57,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Fuori: asset, icone, manifest, service worker (il browser lo scarica senza passare dal login)
-    // e /api/push/tick, che arriva dal cron di Supabase senza cookie e si autentica con CRON_SECRET.
+    // Esclusi anche sw.js (scaricato senza login) e api/push/tick (dal cron senza cookie, si autentica con CRON_SECRET).
     "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/push/tick|.*\\.png|.*\\.svg).*)",
   ],
 };

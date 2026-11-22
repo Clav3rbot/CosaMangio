@@ -29,8 +29,7 @@ export default function LoginPage() {
       setAttesa(false);
       return;
     }
-    // Il profilo di chi entra (piano e preferenze) si salva in questo browser, poi la pagina si ricarica: i moduli
-    // ripartono con quello. Se non si legge, lo rilegge AppShell prima di disegnare.
+    // Si ricarica perché i moduli leggono il profilo all'avvio; se qui non si legge, lo rilegge AppShell.
     dimenticaDati(); // quelli salvati qui sono di chi era collegato prima
     usaProfilo(await leggiProfilo().catch(() => null));
     location.replace("/");
@@ -54,7 +53,7 @@ export default function LoginPage() {
               id="email"
               type="email"
               required
-              // "username": è il valore che i gestori di password abbinano alla password salvata
+              // "username": è il campo che i gestori di password abbinano alla password
               autoComplete="username"
               spellCheck={false}
               value={email}
