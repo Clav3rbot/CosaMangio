@@ -8,14 +8,16 @@ export default function Ingredienti({
   grande = false,
   saltati,
   onTocca,
-  note,
+  sostituti,
+  onSostituto,
 }: {
   voci: [string, string][];
   grande?: boolean;
   saltati?: string[];
   onTocca?: (nome: string) => void;
-  /** Nome dell'ingrediente -> riga sotto il nome. */
-  note?: Record<string, string>;
+  /** Ingredienti che mancano: fra cosa scegliere e cosa conta come usato (vedi sostitutiDi). */
+  sostituti?: { nome: string; prodotto: string; opzioni: { id: string; nome: string }[]; usato?: string }[];
+  onSostituto?: (prodotto: string, id: string) => void;
 }) {
   const [pronti, setPronti] = useState<string[]>([]);
   const segnati = saltati ?? pronti;
@@ -25,6 +27,7 @@ export default function Ingredienti({
     <ul className="card divide-y divide-line px-5">
       {voci.map(([nome, qta]) => {
         const segnato = segnati.includes(nome);
+        const s = sostituti?.find((x) => x.nome === nome);
         return (
           <li key={nome}>
             <button
@@ -35,12 +38,25 @@ export default function Ingredienti({
                 segnato ? "text-muted line-through" : ""
               }`}
             >
-              <span>
-                {nome}
-                {note?.[nome] && <span className="block text-xs font-medium text-carb">{note[nome]}</span>}
-              </span>
+              <span>{nome}</span>
               <span className="shrink-0 font-semibold">{qta}</span>
             </button>
+            {s && (
+              <div role="group" aria-label={`Al posto di ${nome}`} className="-mt-1 flex flex-wrap items-center gap-1.5 pb-3">
+                <span className="text-xs font-medium text-carb">Non ce l&apos;hai, al suo posto:</span>
+                {s.opzioni.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={o.id === s.usato}
+                    onClick={() => onSostituto?.(s.prodotto, o.id)}
+                    className={`chip ${o.id === s.usato ? "border-carb bg-carb-soft font-medium text-carb" : "text-muted"}`}
+                  >
+                    {o.nome}
+                  </button>
+                ))}
+              </div>
+            )}
           </li>
         );
       })}

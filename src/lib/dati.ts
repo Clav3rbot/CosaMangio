@@ -29,11 +29,12 @@ import {
   type PastoId,
   type Preferenze,
   type Profilo,
+  type Scelti,
 } from "@/lib/piano";
 import { ricettaDi } from "@/lib/promemoria";
 
-/** saltati = nomi degli ingredienti non mangiati. */
-export type StatoPasto = { ricetta: string | null; fatto: boolean; saltati: string[] };
+/** saltati = nomi degli ingredienti non mangiati; sostituti = cosa hai usato al posto di un prodotto che mancava. */
+export type StatoPasto = { ricetta: string | null; fatto: boolean; saltati: string[]; sostituti: Scelti };
 /** spostate: null = giorni soliti delle sedute. */
 export type DatiSettimana = { pasti: Record<string, StatoPasto>; allenamenti: string[]; spostate: string[] | null };
 /** "da_congelare" = arrivato, da porzionare; "manca" = ordinato ma non arrivato. */
@@ -46,7 +47,15 @@ export function pastiCon(giorno: string, dati: DatiSettimana | null, manca?: (id
   return pastiDelGiorno(giorno).map((p) => {
     const stato = dati?.pasti[chiavePasto(giorno, p.id)];
     const rid = ricettaDi(giorno, p, () => stato?.ricetta, manca);
-    return { ...p, rid, ricetta: piano.ricette[rid], fatto: !!stato?.fatto, saltati: stato?.saltati ?? [] };
+    return {
+      ...p,
+      rid,
+      ricetta: piano.ricette[rid],
+      fatto: !!stato?.fatto,
+      saltati: stato?.saltati ?? [],
+      // Manca nei dati ricordati dal browser prima che esistesse.
+      sostituti: stato?.sostituti ?? {},
+    };
   });
 }
 
@@ -144,7 +153,7 @@ export function useSettimana(lunedi: string | null) {
     const sb = createClient();
     const fine = aggiungiGiorni(lunedi, 6);
     Promise.all([
-      sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati").gte("giorno", lunedi).lte("giorno", fine),
+      sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati,sostituti").gte("giorno", lunedi).lte("giorno", fine),
       sb.from("allenamenti").select("giorno").gte("giorno", lunedi).lte("giorno", fine),
       sb.from("sedute_spostate").select("giorni").eq("lunedi", lunedi).maybeSingle(),
     ]).then(([p, a, s]) => {
@@ -155,7 +164,10 @@ export function useSettimana(lunedi: string | null) {
       }
       const letti: DatiSettimana = {
         pasti: Object.fromEntries(
-          p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }])
+          p.data.map((r) => [
+            chiavePasto(r.giorno, r.pasto),
+            { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati, sostituti: r.sostituti },
+          ])
         ),
         allenamenti: a.data.map((r) => r.giorno),
         // Senza tabella valgono i giorni soliti: l'errore esce solo spostando.
@@ -175,13 +187,13 @@ export function useSettimana(lunedi: string | null) {
       const corrente = settimana(lunedi) ?? VUOTA;
       const k = chiavePasto(giorno, pasto);
       const prima: StatoPasto | undefined = corrente.pasti[k];
-      const nuovo = { ...(prima ?? { ricetta: null, fatto: false, saltati: [] }), ...modifica };
+      const nuovo = { ...(prima ?? { ricetta: null, fatto: false, saltati: [], sostituti: {} }), ...modifica };
       const next = { ...corrente, pasti: { ...corrente.pasti, [k]: nuovo } };
       tieniSettimana(lunedi, next);
       setDati(next);
       const { error } = await createClient()
         .from("pasti")
-        .upsert({ user_id: await userId(), giorno, pasto, ricetta: nuovo.ricetta, fatto: nuovo.fatto, saltati: nuovo.saltati });
+        .upsert({ user_id: await userId(), giorno, pasto, ...nuovo });
       if (error) setErrore(error.message);
     },
     [lunedi, setDati]
@@ -438,11 +450,14 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
         if (!primo) return setScelte(new Map());
         const sb = createClient();
         const [p, f] = await Promise.all([
-          sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati").gte("giorno", primo),
+          sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati,sostituti").gte("giorno", primo),
           sb.from("fuori_pasto").select("id,giorno,cibo,quando").gte("giorno", primo),
         ]);
         if (p.error) return setErrore(p.error.message);
-        scelteCache = p.data.map((r) => [chiavePasto(r.giorno, r.pasto), { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati }]);
+        scelteCache = p.data.map((r) => [
+          chiavePasto(r.giorno, r.pasto),
+          { ricetta: r.ricetta, fatto: r.fatto, saltati: r.saltati, sostituti: r.sostituti },
+        ]);
         // Senza tabella le scorte scendono solo coi pasti: l'errore lo mostra Oggi.
         fuoriCache = f.data ?? [];
         ricorda("scelte", scelteCache);
@@ -468,7 +483,8 @@ export function useScorte(adesso: Momento | null, spesa: Record<string, StatoSpe
           (d, p) => scelte?.get(chiavePasto(d, p))?.ricetta,
           manca,
           (d, p) => scelte?.get(chiavePasto(d, p))?.saltati,
-          (d, p) => !!scelte?.get(chiavePasto(d, p))?.fatto
+          (d, p) => !!scelte?.get(chiavePasto(d, p))?.fatto,
+          (d, p) => scelte?.get(chiavePasto(d, p))?.sostituti
         );
         for (const [id, q] of Object.entries(consumoFuoriPasto(fuori, s.dal))) c[id] = (c[id] ?? 0) + q;
         consumi.set(s.dal, c);

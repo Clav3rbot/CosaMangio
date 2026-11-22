@@ -7,7 +7,7 @@ const percorso = (p) => fileURLToPath(new URL(p, import.meta.url));
 const jiti = createJiti(import.meta.url, {
   alias: { "@/data/piano.json": percorso("../piano/esempio.json"), "@": percorso("../src") },
 });
-const { piano, mancantiDi, pastiDelGiorno, senzaSaltati, sorelleDi, sostituzioniDi, timerNelPasso } =
+const { piano, mancantiDi, pastiDelGiorno, senzaSaltati, sorelleDi, sostitutiDi, sostituzioniDi, timerNelPasso } =
   await jiti.import("../src/lib/piano.ts");
 const { interpretaLinee, prodottoRiga, quantitaRiga } = await jiti.import("../src/lib/scontrino.ts");
 const { consumoFra, consumoFuoriPasto, confezioniDaComprare, contaPerSpesa, mancaDa, primaMancanza, quantoMostrare, GIORNI_FRESCO } =
@@ -216,6 +216,24 @@ assert.deepEqual(sostituzioniDi(piano.ricette["yogurt-e-mela"], senzaMele), [["M
 const soloInsalata = { ...conInsalata, sostituti: { insalata: [] } };
 assert.deepEqual(mancantiDi(soloInsalata, nonHo), ["insalata"]);
 assert.deepEqual(sostituzioniDi(soloInsalata, nonHo), []);
+// La scelta dell'utente per quel pasto vince sulla proposta, e le scorte scalano quella.
+const hoUsato = { mele: "pomodori" };
+const yogurt = piano.ricette["yogurt-e-mela"];
+assert.deepEqual(sostituzioniDi(yogurt, senzaMele, hoUsato), [["Mela", "pomodori"]]);
+// Fra le opzioni solo i sostituti previsti; l'insalata senza scelta propone i pomodori.
+assert.deepEqual(sostitutiDi(yogurt, senzaMele, hoUsato)[0].opzioni.map((o) => o.id), ["banane"]);
+assert.deepEqual(sostitutiDi(conInsalata, nonHo)[0], {
+  nome: "Insalata",
+  prodotto: "insalata",
+  opzioni: [{ id: "pomodori", nome: "pomodori" }],
+  usato: "pomodori",
+});
+// Una scelta che non è un prodotto non conta.
+assert.deepEqual(sostituzioniDi(yogurt, senzaMele, { mele: "unicorno" }), [["Mela", "banane"]]);
+assert.deepEqual(
+  consumoFra(...lunediSera, nessuna, nonHo, undefined, undefined, () => ({ insalata: "mele" })),
+  { pollo: 180, mele: 100, pane: 80 }
+);
 // Insalata finita e pomodori in casa: la spesa non serve lunedì sera per l'insalata, serve quando finiscono i pomodori.
 const senzaInsalata = { ...tutto, insalata: { quantita: 0, dal }, pomodori: { quantita: 250, dal } };
 const perInsalata = primaMancanza(sera, {}, senzaInsalata, quanti(senzaInsalata), nessuna);

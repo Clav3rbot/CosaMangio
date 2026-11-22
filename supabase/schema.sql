@@ -10,8 +10,9 @@ create table public.profili (
   preferenze jsonb not null default '{}'
 );
 
--- Un pasto di un giorno: quale ricetta hai scelto (null = quella proposta dalla rotazione), se l'hai mangiato e
--- quali ingredienti non hai mangiato (escono da kcal, proteine e consumo delle scorte).
+-- Un pasto di un giorno: quale ricetta hai scelto (null = quella proposta dalla rotazione), se l'hai mangiato,
+-- quali ingredienti non hai mangiato (escono da kcal, proteine e consumo delle scorte) e cosa hai usato al posto
+-- di un prodotto che mancava (prodotto -> prodotto usato: le scorte scalano quello).
 create table public.pasti (
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   giorno date not null,
@@ -19,6 +20,7 @@ create table public.pasti (
   ricetta text,
   fatto boolean not null default false,
   saltati text[] not null default '{}',
+  sostituti jsonb not null default '{}',
   primary key (user_id, giorno, pasto)
 );
 

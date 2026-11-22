@@ -211,12 +211,20 @@ export function senzaSaltati(r: Ricetta, saltati: string[] = []) {
   return { kcal: Math.max(0, Math.round(kcal)), prot: Math.max(0, Math.round(prot)), prodotti };
 }
 
-/** Il primo sostituto che hai di un prodotto della ricetta che manca. */
-export const sostitutoDi = (r: Ricetta, id: string, manca: (id: string) => boolean) =>
-  manca(id) ? (r.sostituti?.[id] ?? voci.get(id)?.sostituti)?.find((s) => !manca(s)) : undefined;
+/** Prodotto che mancava -> prodotto usato al suo posto, scelto dall'utente per un pasto. */
+export type Scelti = Record<string, string>;
 
-const senzaRimedio = (r: Ricetta, manca: (id: string) => boolean) => (id: string) =>
-  manca(id) && !sostitutoDi(r, id, manca);
+/** Quello scelto per il pasto; se no, il primo sostituto che hai di un prodotto della ricetta che manca. */
+export const sostitutoDi = (r: Ricetta, id: string, manca: (id: string) => boolean, scelti: Scelti = {}) =>
+  // La scelta la scrive l'utente nella sua riga: vale solo se è un prodotto.
+  voci.has(scelti[id])
+    ? scelti[id]
+    : manca(id)
+      ? (r.sostituti?.[id] ?? voci.get(id)?.sostituti)?.find((s) => !manca(s))
+      : undefined;
+
+const senzaRimedio = (r: Ricetta, manca: (id: string) => boolean, scelti?: Scelti) => (id: string) =>
+  manca(id) && !sostitutoDi(r, id, manca, scelti);
 
 export const daScongelare = (r: Ricetta, manca: (id: string) => boolean = () => false) =>
   Object.keys(r.prodotti).flatMap((id) => {
@@ -226,17 +234,31 @@ export const daScongelare = (r: Ricetta, manca: (id: string) => boolean = () => 
   });
 
 /** Quello che manca e non ha un sostituto in casa. */
-export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean) =>
+export const mancantiDi = (r: Ricetta, manca: (id: string) => boolean, scelti?: Scelti) =>
   Object.keys(r.prodotti)
-    .filter(senzaRimedio(r, manca))
+    .filter(senzaRimedio(r, manca, scelti))
     .map((id) => voci.get(id)!.nome.toLowerCase());
 
-/** [ingrediente che manca, com'è scritto nella ricetta, e cosa usi al suo posto]. */
-export const sostituzioniDi = (r: Ricetta, manca: (id: string) => boolean) =>
-  r.ingredienti.flatMap(([nome], i): [string, string][] => {
-    const s = sostitutoDi(r, r.valori[i].prodotto ?? "", manca);
-    return s ? [[nome, voci.get(s)!.nome.toLowerCase()]] : [];
+/**
+ * Per ogni ingrediente che manca, o sostituito a mano: fra cosa scegliere e cosa conta come usato. Fra le
+ * opzioni anche i sostituti del prodotto che la ricetta non propone: l'utente può averli usati lo stesso.
+ */
+export const sostitutiDi = (r: Ricetta, manca: (id: string) => boolean, scelti: Scelti = {}) =>
+  r.ingredienti.flatMap(([nome], i) => {
+    const id = r.valori[i].prodotto;
+    if (!id || !(manca(id) || voci.has(scelti[id]))) return [];
+    const usato = sostitutoDi(r, id, manca, scelti);
+    const opzioni = [...new Set([...(r.sostituti?.[id] ?? []), ...(voci.get(id)?.sostituti ?? [])])]
+      .filter((s) => !manca(s) || s === usato)
+      .map((s) => ({ id: s, nome: voci.get(s)!.nome.toLowerCase() }));
+    return opzioni.length ? [{ nome, prodotto: id, opzioni, usato }] : [];
   });
+
+/** [ingrediente che manca, com'è scritto nella ricetta, e cosa usi al suo posto]. */
+export const sostituzioniDi = (r: Ricetta, manca: (id: string) => boolean, scelti?: Scelti) =>
+  sostitutiDi(r, manca, scelti).flatMap((s): [string, string][] =>
+    s.usato ? [[s.nome, voci.get(s.usato)!.nome.toLowerCase()]] : []
+  );
 
 export const ricettaValida = (pasto: PastoId, id: string) => !!perPasto.get(pasto)?.has(id);
 

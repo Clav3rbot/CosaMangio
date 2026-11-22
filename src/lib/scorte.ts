@@ -9,6 +9,7 @@ import {
   senzaSaltati,
   sostitutoDi,
   type PastoId,
+  type Scelti,
   type VoceSpesa,
 } from "@/lib/piano";
 import { ricettaDi, type Scelta } from "@/lib/promemoria";
@@ -44,7 +45,8 @@ export function consumoFra(
   scelta: Scelta,
   manca?: (id: string) => boolean,
   saltati?: (data: string, pasto: PastoId) => string[] | undefined,
-  fatto: (data: string, pasto: PastoId) => boolean = () => false
+  fatto: (data: string, pasto: PastoId) => boolean = () => false,
+  scelti?: (data: string, pasto: PastoId) => Scelti | undefined
 ) {
   const tot: Record<string, number> = {};
   for (let d = da.data < piano.inizio ? piano.inizio : da.data; d <= a.data; d = aggiungiGiorni(d, 1)) {
@@ -56,7 +58,7 @@ export function consumoFra(
       if (soloSegnati && !fatto(d, p.id)) continue;
       const r = piano.ricette[ricettaDi(d, p, scelta, manca)];
       for (const [id, q] of Object.entries(senzaSaltati(r, saltati?.(d, p.id)).prodotti)) {
-        const usi = (manca && sostitutoDi(r, id, manca)) ?? id;
+        const usi = sostitutoDi(r, id, manca ?? (() => false), scelti?.(d, p.id)) ?? id;
         tot[usi] = (tot[usi] ?? 0) + q;
       }
     }

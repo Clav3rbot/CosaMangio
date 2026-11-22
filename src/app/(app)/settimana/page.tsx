@@ -134,11 +134,11 @@ export default function Settimana() {
                       <span className={`min-w-0 flex-1 truncate ${p.fatto ? "text-muted" : ""}`}>{p.ricetta.nome}</span>
                       {p.fatto ? (
                         <Check className="h-4 w-4 shrink-0 text-accent" strokeWidth={3} aria-label="mangiato" />
-                      ) : mancantiDi(p.ricetta, manca).length ? (
+                      ) : mancantiDi(p.ricetta, manca, p.sostituti).length ? (
                         <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-fat">
                           <PackageX className="h-4 w-4" /> manca
                         </span>
-                      ) : sostituzioniDi(p.ricetta, manca).length ? (
+                      ) : sostituzioniDi(p.ricetta, manca, p.sostituti).length ? (
                         <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-carb">
                           <Replace className="h-4 w-4" /> sostituto
                         </span>

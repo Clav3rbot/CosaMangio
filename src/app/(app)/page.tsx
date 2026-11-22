@@ -226,7 +226,7 @@ function Oggi() {
             {prossimo.kcal} kcal · {prossimo.prot} g proteine
             {prossimo.ricetta.minuti > 0 && ` · ${prossimo.ricetta.minuti} min`}
           </p>
-          <NonHai r={prossimo.ricetta} manca={manca} />
+          <NonHai r={prossimo.ricetta} manca={manca} scelti={prossimo.sostituti} />
           <div className="mt-4 flex gap-2">
             {prossimo.ricetta.passi.length > 0 && (
               <Link href={`/pasto?d=${giorno}&p=${prossimo.id}&cucina=1`} className="btn-primary">
@@ -263,7 +263,7 @@ function Oggi() {
                   {p.kcal} kcal · {p.prot} g prot.
                   {p.opzioni.length > 1 && ` · ${p.opzioni.length} ricette`}
                 </span>
-                {!p.fatto && <NonHai r={p.ricetta} manca={manca} />}
+                {!p.fatto && <NonHai r={p.ricetta} manca={manca} scelti={p.sostituti} />}
               </span>
             </Link>
             <BottoneFatto
