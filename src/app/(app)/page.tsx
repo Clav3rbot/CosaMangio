@@ -42,6 +42,7 @@ function Oggi() {
   const oggi = adesso?.data ?? null;
   const giorno = params.get("d") ?? oggi;
   const { dati, errore: erroreSettimana, salvaPasto } = useSettimana(giorno ? lunediDi(giorno) : null);
+  const { dati: datiLunedi } = useSettimana(giorno && indiceGiorno(giorno) === 6 ? aggiungiGiorni(giorno, 1) : null);
   const fuori = useFuoriPasto(giorno && oggi && giorno <= oggi ? giorno : null);
   const errore = erroreSettimana ?? fuori.errore;
   const { stato: spesa } = useSpesa();
@@ -65,14 +66,14 @@ function Oggi() {
   const giorniAllenamento = giorniSedute(lunediDi(giorno), dati?.spostate);
   const giornoAllenamento = giorniAllenamento.includes(giorno);
   const allenatoOggi = !!dati?.allenamenti.includes(giorno);
-  // Da oggi, non dal giorno guardato: "Stasera in frigo" parla di stasera.
-  const domani = aggiungiGiorni(oggi, 1);
+  // La sera del giorno guardato, se non è passata: fino alle 5 è ancora quella di ieri.
+  const domani = aggiungiGiorni(giorno, 1);
   const inFrigo =
-    domani < piano.inizio
+    domani < piano.inizio || giorno < aggiungiGiorni(oggi, adesso.minuti < 5 * 60 ? -1 : 0)
       ? []
       : [
           ...new Set(
-            pastiCon(domani, lunediDi(domani) === lunediDi(giorno) ? dati : null, manca).flatMap((p) =>
+            pastiCon(domani, indiceGiorno(giorno) === 6 ? datiLunedi : dati, manca).flatMap((p) =>
               daScongelare(p.ricetta, manca)
             )
           ),
