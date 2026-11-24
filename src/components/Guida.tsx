@@ -14,28 +14,34 @@ const oraAttuale = () => Date.now();
 
 // Un <audio> e non un AudioContext: sull'iPhone l'AudioContext tace col tasto silenzioso.
 function wavAllarme() {
-  const hz = 8000;
-  const b = new Uint8Array(44 + hz);
+  const hz = 22050;
+  const b = new Uint8Array(44 + 2 * hz);
   const v = new DataView(b.buffer);
   const scrivi = (o: number, s: string) => [...s].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
   scrivi(0, "RIFF");
-  v.setUint32(4, 36 + hz, true);
+  v.setUint32(4, 36 + 2 * hz, true);
   scrivi(8, "WAVEfmt ");
   v.setUint32(16, 16, true);
   v.setUint16(20, 1, true);
   v.setUint16(22, 1, true);
   v.setUint32(24, hz, true);
-  v.setUint32(28, hz, true);
-  v.setUint16(32, 1, true);
-  v.setUint16(34, 8, true);
+  v.setUint32(28, 2 * hz, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
   scrivi(36, "data");
-  v.setUint32(40, hz, true);
+  v.setUint32(40, 2 * hz, true);
   for (let i = 0; i < hz; i++) {
     const t = i / hz;
     const bip = t < 0.15 || (t > 0.25 && t < 0.4);
-    b[44 + i] = 128 + (bip ? Math.round(120 * Math.sin(2 * Math.PI * 880 * t)) : 0);
+    // Armoniche e saturazione: a 880 Hz l'altoparlante del telefono rende poco, tra 2 e 4 kHz molto.
+    const w = 2 * Math.PI * 880 * t;
+    const s = (Math.sin(w) + 0.7 * Math.sin(2 * w) + 0.5 * Math.sin(3 * w) + 0.35 * Math.sin(4 * w)) / 1.94;
+    v.setInt16(44 + 2 * i, bip ? Math.round((31500 * Math.tanh(2 * s)) / Math.tanh(2)) : 0, true);
   }
-  return "data:audio/wav;base64," + btoa(String.fromCharCode(...b));
+  let bin = "";
+  // A pezzi: Safari rifiuta chiamate con più di 65536 argomenti.
+  for (let i = 0; i < b.length; i += 8192) bin += String.fromCharCode(...b.subarray(i, i + 8192));
+  return "data:audio/wav;base64," + btoa(bin);
 }
 
 // Una per titolo: mentre arrivano i dati la pagina può mostrare per un attimo un'altra ricetta.
