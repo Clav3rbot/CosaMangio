@@ -24,7 +24,6 @@ const primo = (data: string) => ({ data, id: pastiDelGiorno(data)[0].id });
 
 function pastoDaCucinare() {
   const { data, minuti } = adessoNelFuso();
-  if (data < piano.inizio) return primo(piano.inizio);
   const p = pastiDelGiorno(data).find((s) => minutiDa(s.ora) + 60 > minuti);
   return p ? { data, id: p.id } : primo(aggiungiGiorni(data, 1));
 }

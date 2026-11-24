@@ -17,7 +17,6 @@ import {
   aggiungiGiorni,
   daScongelare,
   dataLunga,
-  giornoDelPiano,
   giorniDellaSettimana,
   inPausa,
   indiceGiorno,
@@ -41,7 +40,7 @@ function Oggi() {
   const params = useSearchParams();
   const adesso = useAdesso();
   const oggi = adesso?.data ?? null;
-  const giorno = params.get("d") ?? (oggi && giornoDelPiano(oggi));
+  const giorno = params.get("d") ?? oggi;
   const { dati, errore: erroreSettimana, salvaPasto } = useSettimana(giorno ? lunediDi(giorno) : null);
   const fuori = useFuoriPasto(giorno && oggi && giorno <= oggi ? giorno : null);
   const errore = erroreSettimana ?? fuori.errore;
