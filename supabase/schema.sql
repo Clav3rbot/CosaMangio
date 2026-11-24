@@ -2,8 +2,7 @@
 
 -- Profilo di un utente: quale piano segue ('' = src/data/piano.json, se no un nome di src/data/altri-piani.ts) e le
 -- sue preferenze (orari dei pasti e degli avvisi, avvisi spenti). Senza riga valgono il piano predefinito e i suoi
--- orari. L'app scrive solo le preferenze; il piano lo assegni tu da qui (vedi README, "Più persone"). I piani stanno
--- tutti nel codice che il browser scarica, quindi la colonna non protegge niente: dice solo quale mostrare.
+-- orari. L'app scrive solo le preferenze; il piano lo assegni tu da qui (vedi README, "Più persone").
 create table public.profili (
   user_id uuid primary key default auth.uid() references auth.users on delete cascade,
   piano text not null default '',
@@ -123,6 +122,10 @@ create policy "solo i propri nomi" on public.nomi_scontrino
 create policy "solo le proprie iscrizioni" on public.push_subscriptions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 -- push_log: nessuna policy, quindi chiusa a tutti tranne la service role.
+
+-- Con piano scrivibile, o la riga cancellabile, un utente passerebbe al piano di un altro.
+revoke insert, update, delete on public.profili from anon, authenticated;
+grant insert (user_id, preferenze), update (user_id, preferenze) on public.profili to authenticated;
 
 -- Il server invia le notifiche all'endpoint salvato dal browser: solo servizi push veri, in https.
 alter table public.push_subscriptions add constraint endpoint_servizio_push check (

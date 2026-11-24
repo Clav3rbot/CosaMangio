@@ -14,8 +14,6 @@ import {
 } from "@/lib/scontrino";
 import { quantoMostrare } from "@/lib/scorte";
 
-const voci = new Map(piano.spesa.map((v) => [v.id, v]));
-
 // Per accorgersi di un documento ricaricato: le scorte si sommerebbero due volte.
 const ULTIMO = "dieta:ultimo-documento";
 const impronta = (d: Documento) => `${d.data}|${d.righe.map((r) => `${r.codice}:${r.qta}`).join(",")}`;
@@ -36,7 +34,7 @@ type Riga = {
   quanto: { q: number; stimata: boolean } | null;
 };
 
-const CON_DOCUMENTO = piano.scontrino.length > 0;
+const conDocumento = () => piano.scontrino.length > 0;
 
 /** impara: gli articoli sistemati a mano (prodotto e peso), da ricordare. */
 export default function ArrivoSpesa({
@@ -76,7 +74,7 @@ export default function ArrivoSpesa({
   const righe: Riga[] = (doc?.righe ?? []).map((r) => {
     const auto = prodottoRiga(r, nomi);
     const id = r.codice in scelte ? scelte[r.codice] || null : (auto ?? null);
-    const v = id ? voci.get(id)! : null;
+    const v = id ? piano.spesa.find((x) => x.id === id)! : null;
     const peso = nomi[r.codice]?.grammi ?? piano.articoli[r.codice];
     const nuovo = !!auto && !(r.codice in nomi) && !(r.codice in piano.articoli);
     return { r, auto, nuovo, v, quanto: v && r.consegnata ? quantitaRiga(r, v, peso) : null };
@@ -131,7 +129,7 @@ export default function ArrivoSpesa({
       <p className="font-semibold">Com&apos;è andata la consegna?</p>
       {!doc ? (
         <>
-          {CON_DOCUMENTO && (
+          {conDocumento() && (
             <label className={`btn-ghost mt-3 w-full cursor-pointer ${lettura === "…" ? "opacity-50" : ""}`}>
               <FileText className="h-5 w-5" /> {lettura === "…" ? "Leggo il documento…" : "Carica il documento di consegna"}
               <input
@@ -149,7 +147,7 @@ export default function ArrivoSpesa({
             </p>
           )}
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            {CON_DOCUMENTO
+            {conDocumento()
               ? "È il PDF che ti manda Esselunga: lo leggo sul telefono e capisco cosa è arrivato e quanto pesa. Oppure tocca qui sotto quello che non ti hanno consegnato."
               : "Tocca qui sotto quello che non è arrivato: il resto lo conto come comprato."}
           </p>

@@ -100,6 +100,9 @@ dal SQL Editor di Supabase: `insert into public.profili (user_id, piano) values 
 L'id è in Authentication → Users. Chi non ha una riga usa `src/data/piano.json`. Pasti segnati, spesa, notifiche
 e orari (pagina Tu) restano di ognuno.
 
+I piani non stanno nel codice che il browser scarica: il server dà a ogni utente il suo, dopo il login. Chi non
+ha un utente non ne legge nessuno, e nessuno legge quello di un altro.
+
 ## Messa in funzione
 
 1. **Supabase.** Crea un progetto, esegui `supabase/schema.sql` nel SQL Editor, crea il tuo utente
@@ -161,9 +164,6 @@ perché i dati su Supabase puntano al loro nome.
 - I nomi dei timer riconoscono i cibi da un elenco di parole italiane; con ricette diverse usano il nome della
   ricetta.
 - L'obiettivo dell'acqua è 2 litri per tutti.
-- I piani stanno nel codice che il browser scarica: chi conosce l'indirizzo dell'app li può leggere anche
-  senza login. Pasti segnati, spesa e scorte no, restano su Supabase, visibili solo all'utente. Nel piano non
-  scrivere quello che vuoi tenere privato.
 
 ## Sviluppo
 

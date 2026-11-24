@@ -1,5 +1,6 @@
 // `npm test`. Usa sempre piano/esempio.json, qualunque sia src/data/piano.json.
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 
@@ -7,8 +8,11 @@ const percorso = (p) => fileURLToPath(new URL(p, import.meta.url));
 const jiti = createJiti(import.meta.url, {
   alias: { "@/data/piano.json": percorso("../piano/esempio.json"), "@": percorso("../src") },
 });
+// "@/lib/..." come nell'app: con due percorsi diversi jiti carica due volte lo stesso file.
+const { pianoDi, usaPianoDi } = await jiti.import("@/lib/piani");
+usaPianoDi();
 const { piano, mancantiDi, pastiDelGiorno, senzaSaltati, sorelleDi, sostitutiDi, sostituzioniDi, timerNelPasso } =
-  await jiti.import("../src/lib/piano.ts");
+  await jiti.import("@/lib/piano");
 const { interpretaLinee, prodottoRiga, quantitaRiga } = await jiti.import("../src/lib/scontrino.ts");
 const { consumoFra, consumoFuoriPasto, confezioniDaComprare, contaPerSpesa, mancaDa, primaMancanza, quantoMostrare, GIORNI_FRESCO } =
   await jiti.import("../src/lib/scorte.ts");
@@ -272,13 +276,12 @@ const fuoriPasto = [
 assert.deepEqual(consumoFuoriPasto(fuoriPasto, segnataDal), { mele: 150, banane: 120 });
 
 // --- Piano per utente (usaPiano), come nel cron ---
-// "@/lib/..." come nell'app: con due percorsi diversi jiti carica due volte lo stesso file.
 const modPiano = await jiti.import("@/lib/piano");
 const modAllenamento = await jiti.import("@/lib/allenamento");
 const { promemoriaDelGiorno: promemoriaCron } = await jiti.import("@/lib/promemoria");
 const { default: altriPiani } = await jiti.import("../src/data/altri-piani.ts");
 for (const [nome, p] of Object.entries(altriPiani)) {
-  modPiano.usaPiano(nome);
+  usaPianoDi(nome);
   assert.equal(modPiano.piano.inizio, p.inizio);
   assert.deepEqual(modPiano.piano.allenamento, p.allenamento);
   assert.deepEqual(modPiano.pastiDelGiorno(p.inizio).map((s) => s.id), Object.keys(p.settimana[0].pasti));
@@ -286,20 +289,31 @@ for (const [nome, p] of Object.entries(altriPiani)) {
   const avvisi = promemoriaCron(p.inizio, nessuna, true).map((x) => x.chiave);
   assert.equal(avvisi.some((k) => k.includes("allen")), !!p.allenamento);
 }
-modPiano.usaPiano("non esiste");
+usaPianoDi("non esiste");
 assert.equal(modPiano.piano.inizio, "2026-01-05");
 assert.equal(modAllenamento.giorniSedute("2026-01-05").length, 2);
 
+assert.match(pianoDi().versione, /^[0-9a-f]{16}$/);
+assert.equal(pianoDi("non esiste").versione, pianoDi().versione);
+for (const [nome, p] of Object.entries(altriPiani)) assert.equal(pianoDi(nome).dati, p);
+
+for (const f of readdirSync(percorso("../src"), { recursive: true }).map((f) => f.replaceAll("\\", "/"))) {
+  if (!/\.tsx?$/.test(f) || f.startsWith("data/")) continue;
+  const testo = readFileSync(percorso(`../src/${f}`), "utf8");
+  if (/data\/(piano\.json|altri-piani)/.test(testo)) assert.equal(f, "lib/piani.ts", `${f} importa i piani`);
+  if (/lib\/piani"/.test(testo)) assert.ok(f.startsWith("app/api/"), `${f} importa i piani`);
+}
+
 // Nome e preferenze li scrive l'utente: nessun valore fa saltare il piano.
 for (const [nome, pref] of [["constructor", {}], ["__proto__", {}], ["", null], ["", "x"], ["", []], ["", { orari: 3, consegna: "x", pause: [null, 5], muti: [null] }]]) {
-  modPiano.usaPiano(nome, pref);
+  usaPianoDi(nome, pref);
   assert.equal(modPiano.piano.inizio, "2026-01-05", `${nome} ${JSON.stringify(pref)}`);
   assert.equal(promemoriaCron("2026-01-06", nessuna, true).length, 6);
 }
 
 // --- Preferenze: orari e avvisi spenti ---
 const avvisiCon = (pref) => {
-  modPiano.usaPiano("", pref);
+  usaPianoDi("", pref);
   return riassuntoCron(promemoriaCron("2026-01-06", nessuna, true));
 };
 const riassuntoCron = (l) => l.map((p) => `${p.chiave}@${p.minuti}`);
@@ -326,11 +340,11 @@ assert.ok(avvisiCon({ consegna: { giorno: 2, ora: "19:00" } }).includes("spesa@7
 assert.ok(avvisiCon({ consegna: { giorno: 2, ora: "19:00" }, ordina: "10:30" }).includes("spesa@630"));
 assert.ok(!avvisiCon({ consegna: { giorno: 1, ora: "19:00" } }).some((a) => a.startsWith("spesa")));
 assert.deepEqual(avvisiCon({ consegna: { giorno: 9, ora: "19:00" } }), soliti); // giorno che non esiste
-modPiano.usaPiano("", { consegna: { giorno: 2, ora: "19:00" } });
+usaPianoDi("", { consegna: { giorno: 2, ora: "19:00" } });
 assert.deepEqual(modPiano.prossimaConsegna({ data: "2026-01-06", minuti: 600 }), { data: "2026-01-07", minuti: 1140 });
 assert.deepEqual(modPiano.prossimaConsegna({ data: "2026-01-07", minuti: 600 }), { data: "2026-01-07", minuti: 1140 });
 assert.deepEqual(modPiano.prossimaConsegna({ data: "2026-01-07", minuti: 1140 }), { data: "2026-01-14", minuti: 1140 });
-modPiano.usaPiano();
+usaPianoDi();
 assert.equal(modPiano.prossimaConsegna({ data: "2026-01-06", minuti: 600 }), null);
 
 // --- Freschi: quanto usano i piatti della settimana, non la quantità fissa ---
@@ -348,12 +362,12 @@ assert.deepEqual(
   fabbisognoSettimana({ data: "2026-01-02", minuti: 600 }, nessuna),
   consumoCron({ data: "2026-01-05", minuti: -1 }, { data: "2026-01-11", minuti: 1439 }, nessuna)
 );
-modPiano.usaPiano("", { consegna: { giorno: 6, ora: "20:00" } }); // domenica sera
+usaPianoDi("", { consegna: { giorno: 6, ora: "20:00" } }); // domenica sera
 const daMercoledi = fabbisognoSettimana({ data: "2026-01-07", minuti: 600 }, nessuna); // consegna domenica 11
 assert.equal(daMercoledi.yogurt, 750 + 0); // la settimana del 12
 // Consegna appena passata: vale la settimana che parte adesso.
 assert.equal(fabbisognoSettimana({ data: "2026-01-12", minuti: 0 }, nessuna).yogurt, 750);
-modPiano.usaPiano();
+usaPianoDi();
 
 // --- Pasti saltati: in un giorno passato con una spunta, i non segnati non scalano ---
 const lunSera = [{ data: "2026-01-04", minuti: 19 * 60 }, { data: "2026-01-06", minuti: 0 }];
@@ -371,7 +385,7 @@ assert.deepEqual(
 // --- Pausa ---
 const inPausa = { pause: [{ dal: "2026-01-06", al: "2026-01-07" }, { dal: "nonunadata" }] };
 assert.deepEqual(avvisiCon(inPausa), []); // martedì 6, in pausa anche domani
-modPiano.usaPiano("", inPausa);
+usaPianoDi("", inPausa);
 assert.equal(modPiano.piano.pause.length, 1); // quella senza data valida è ignorata
 assert.ok(!modPiano.inPausa("2026-01-05") && modPiano.inPausa("2026-01-07") && !modPiano.inPausa("2026-01-08"));
 // Lunedì 5 non si scongela niente per martedì; mercoledì 7 sera sì, per giovedì.
@@ -382,10 +396,10 @@ const pausaInMezzo = [{ data: "2026-01-05", minuti: 23 * 60 }, { data: "2026-01-
 assert.deepEqual(consumoCron(...pausaInMezzo, nessuna), {});
 assert.deepEqual(Object.keys(consumoCron(...pausaInMezzo, nessuna, undefined, undefined, (d, p) => d === "2026-01-06" && p === "pranzo")).length > 0, true);
 // Pausa aperta: non finisce, e la spesa non la conta fra i giorni in cui manca qualcosa.
-modPiano.usaPiano("", { pause: [{ dal: "2026-01-05" }] });
+usaPianoDi("", { pause: [{ dal: "2026-01-05" }] });
 assert.ok(modPiano.inPausa("2027-01-01"));
 const { primaMancanza: mancanzaCron } = await jiti.import("@/lib/scorte");
 assert.equal(mancanzaCron(sera, {}, pocheUova, quanti(pocheUova), nessuna), null);
-modPiano.usaPiano();
+usaPianoDi();
 
 console.log("OK");

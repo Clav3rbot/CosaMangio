@@ -49,7 +49,6 @@ export function interpretaLinee(linee: string[]): Documento {
   return { data, righe };
 }
 
-const regole = piano.scontrino.map(([re, id]) => [new RegExp(re), id] as const);
 
 /** Scelta dell'utente per un codice articolo; prodotto "" = non è nella lista. */
 export type NomeArticolo = { prodotto: string; grammi: number | null };
@@ -57,7 +56,7 @@ export type NomeArticolo = { prodotto: string; grammi: number | null };
 /** null = non è nella lista, undefined = da chiedere. */
 export function prodottoRiga(r: RigaScontrino, nomi: Record<string, NomeArticolo>): string | null | undefined {
   if (r.codice in nomi) return nomi[r.codice].prodotto || null;
-  return regole.find(([re]) => re.test(r.descrizione.toUpperCase()))?.[1];
+  return piano.scontrino.find(([re]) => new RegExp(re).test(r.descrizione.toUpperCase()))?.[1];
 }
 
 export const confezioniRiga = (r: RigaScontrino) => (/Kg$/i.test(r.qta) ? 1 : Number(r.qta));

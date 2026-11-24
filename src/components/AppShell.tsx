@@ -7,7 +7,17 @@ import { preconnect } from "react-dom";
 import { CalendarDays, ChefHat, Dumbbell, House, ShoppingCart, UserRound } from "lucide-react";
 import { guidaDaRiaprire } from "@/components/Guida";
 import { leggiProfilo } from "@/lib/dati";
-import { adessoNelFuso, aggiungiGiorni, minutiDa, pastiDelGiorno, piano, profiloLocale, usaProfilo } from "@/lib/piano";
+import {
+  adessoNelFuso,
+  aggiungiGiorni,
+  minutiDa,
+  pastiDelGiorno,
+  piano,
+  pianoPronto,
+  profiloLocale,
+  usaProfilo,
+  versioneLocale,
+} from "@/lib/piano";
 
 const voci = () => [
   { href: "/", label: "Oggi", Icon: House },
@@ -46,7 +56,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     leggiProfilo().then(
       (p) => {
-        const uguale = () => JSON.stringify(p) === JSON.stringify(profiloLocale());
+        const uguale = () =>
+          p.versione === versioneLocale() &&
+          JSON.stringify({ piano: p.piano, preferenze: p.preferenze }) === JSON.stringify(profiloLocale());
         if (uguale()) return;
         usaProfilo(p);
         // Se il browser non l'ha salvato, ricaricare girerebbe all'infinito.
@@ -63,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (g && g !== location.pathname + location.search) router.replace(g);
   }, [router]);
 
-  if (!nelBrowser || (!profiloLocale() && !senzaProfilo)) return null;
+  if (!nelBrowser || !pianoPronto() || (!profiloLocale() && !senzaProfilo)) return null;
 
   return (
     <>

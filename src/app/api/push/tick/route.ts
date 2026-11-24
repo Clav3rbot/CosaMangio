@@ -3,7 +3,8 @@ import type { PushSubscription } from "web-push";
 import { giorniSedute } from "@/lib/allenamento";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviaNotifica } from "@/lib/push";
-import { adessoNelFuso, aggiungiGiorni, lunediDi, usaPiano, type PastoId, type Profilo } from "@/lib/piano";
+import { usaPianoDi } from "@/lib/piani";
+import { adessoNelFuso, aggiungiGiorni, lunediDi, type PastoId, type Profilo } from "@/lib/piano";
 import { promemoriaDelGiorno, type Promemoria } from "@/lib/promemoria";
 import { mancaDa } from "@/lib/scorte";
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     let dovuti: Promemoria[];
     try {
       // usaPiano è globale: fino a "dovuti" niente await, o un'altra richiesta lo cambia.
-      usaPiano(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
+      usaPianoDi(profili.get(uid)?.piano, profili.get(uid)?.preferenze);
       const scelte = new Map(pasti.data!.map((r) => [`${r.giorno}|${r.pasto}`, r.ricetta as string | null]));
       // Come nell'app, se i giorni spostati non si leggono valgono quelli soliti.
       const sedutaOggi =

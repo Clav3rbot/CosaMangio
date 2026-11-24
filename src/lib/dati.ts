@@ -26,6 +26,8 @@ import {
   pastiDelGiorno,
   piano,
   usaProfilo,
+  versioneLocale,
+  type DatiPiano,
   type PastoId,
   type Preferenze,
   type Profilo,
@@ -134,10 +136,10 @@ async function userId() {
   return data.session?.user.id ?? null;
 }
 
-export async function leggiProfilo(): Promise<Profilo> {
-  const { data, error } = await createClient().from("profili").select("piano,preferenze").maybeSingle();
-  if (error) throw new Error(error.message);
-  return { piano: data?.piano ?? "", preferenze: data?.preferenze ?? {} };
+export async function leggiProfilo(): Promise<Profilo & { versione: string; dati?: DatiPiano }> {
+  const res = await fetch(`/api/piano?v=${versioneLocale()}`);
+  if (!res.ok) throw new Error(`profilo non letto (${res.status})`);
+  return res.json();
 }
 
 /** Non tocca il piano della riga; senza riga nasce col predefinito. */

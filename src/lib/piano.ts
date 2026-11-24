@@ -1,7 +1,3 @@
-import dati from "@/data/piano.json";
-import altriPiani from "@/data/altri-piani";
-
-// piano.json lo genera scripts/build_dieta.py da piano/mio.py: non modificarlo a mano.
 export type PastoId = "colazione" | "pranzo" | "merenda" | "cena" | "dopocena";
 export type Ricetta = {
   nome: string;
@@ -116,6 +112,8 @@ export type Preferenze = {
 };
 /** piano: "" = piano.json, se no una chiave di altri-piani. */
 export type Profilo = { piano: string; preferenze: Preferenze };
+export type DatiPiano = Omit<Piano, "avvisi" | "consegna" | "pause">;
+export type PianoSalvato = { versione: string; dati: DatiPiano };
 
 const SCONGELA = "22:30";
 const ORDINA = "12:00";
@@ -128,13 +126,17 @@ let voci: Map<string, VoceSpesa>;
 // Su tutta la settimana: un pasto scambiato fra due giorni resta valido.
 let perPasto: Map<PastoId, Set<string>>;
 let fmtFuso: Intl.DateTimeFormat;
+let base: DatiPiano | null = null;
+
+export const pianoPronto = () => !!base;
 
 /** Sul server il cron lo chiama per ogni utente: niente va calcolato una volta per modulo, si legge da piano. */
-export function usaPiano(nome = "", preferenze: Preferenze = {}) {
+export function usaPiano(dati: DatiPiano | null, preferenze: Preferenze = {}) {
   for (const k of Object.keys(piano)) delete (piano as Record<string, unknown>)[k];
-  // Nome e preferenze vengono dalla riga dell'utente: non sono affidabili.
+  base = dati;
+  if (!base) return;
+  // Le preferenze vengono dalla riga dell'utente: non sono affidabili.
   const pref: Preferenze = preferenze && typeof preferenze === "object" && !Array.isArray(preferenze) ? preferenze : {};
-  const base = (Object.hasOwn(altriPiani, nome) ? altriPiani[nome] : dati) as Omit<Piano, "avvisi" | "consegna" | "pause">;
   const c = pref.consegna;
   const ora = (v: unknown, solita: string) => (oraValida(v) ? v : solita);
   const pasti = base.pasti.map((p) => ({ ...p, ora: ora(pref.orari?.[p.id], p.ora) }));
@@ -170,31 +172,42 @@ export function usaPiano(nome = "", preferenze: Preferenze = {}) {
 }
 
 const CHIAVE_PROFILO = "dieta:profilo";
+const CHIAVE_PIANO = "dieta:piano";
 
-/** null = mai letto dal database, o sul server. */
-export function profiloLocale(): Profilo | null {
+function salvato<T>(chiave: string): T | null {
   if (typeof document === "undefined") return null;
   try {
-    return JSON.parse(localStorage.getItem(CHIAVE_PROFILO) ?? "null");
+    return JSON.parse(localStorage.getItem(chiave) ?? "null");
   } catch {
     return null;
   }
 }
 
-/** null cancella il profilo salvato nel browser. */
-export function usaProfilo(p: Profilo | null) {
+/** null = mai letto dal database, o sul server. */
+export const profiloLocale = () => salvato<Profilo>(CHIAVE_PROFILO);
+export const versioneLocale = () => salvato<PianoSalvato>(CHIAVE_PIANO)?.versione ?? "";
+
+/** null cancella profilo e piano salvati nel browser. */
+export function usaProfilo(p: (Profilo & Partial<PianoSalvato>) | null) {
   try {
-    if (p) localStorage.setItem(CHIAVE_PROFILO, JSON.stringify(p));
-    else localStorage.removeItem(CHIAVE_PROFILO);
+    if (p) {
+      localStorage.setItem(CHIAVE_PROFILO, JSON.stringify({ piano: p.piano, preferenze: p.preferenze }));
+      if (p.dati) localStorage.setItem(CHIAVE_PIANO, JSON.stringify({ versione: p.versione, dati: p.dati }));
+    } else {
+      localStorage.removeItem(CHIAVE_PROFILO);
+      localStorage.removeItem(CHIAVE_PIANO);
+    }
   } catch {
     // Memoria del browser piena o spenta: il profilo vale fino alla ricarica.
   }
-  usaPiano(p?.piano, p?.preferenze);
+  usaPiano(p ? (p.dati ?? base) : null, p?.preferenze);
 }
 
-{
-  const p = profiloLocale();
-  usaPiano(p?.piano, p?.preferenze ?? {});
+try {
+  usaPiano(salvato<PianoSalvato>(CHIAVE_PIANO)?.dati ?? null, profiloLocale()?.preferenze);
+} catch {
+  // Piano salvato da una versione vecchia: AppShell lo riscarica.
+  usaPiano(null);
 }
 
 /** saltati = nomi degli ingredienti non mangiati. */
