@@ -102,6 +102,33 @@ function tieniSettimana(lunedi: string, dati: DatiSettimana) {
   ricorda(`settimana:${lunedi}`, dati);
 }
 
+// Una lettura partita prima che il database abbia una scelta la sovrascriverebbe con quella vecchia.
+const scritture = new Map<string, { partite: number; inCorso: Set<Promise<unknown>> }>();
+
+function scrivi<T>(lunedi: string, scrittura: PromiseLike<T>) {
+  const s = scritture.get(lunedi) ?? { partite: 0, inCorso: new Set() };
+  scritture.set(lunedi, s);
+  s.partite++;
+  const p = Promise.resolve(scrittura).finally(() => s.inCorso.delete(p));
+  s.inCorso.add(p);
+  return p;
+}
+
+async function leggiSettimana(lunedi: string) {
+  const sb = createClient();
+  const fine = aggiungiGiorni(lunedi, 6);
+  for (;;) {
+    await Promise.allSettled(scritture.get(lunedi)?.inCorso ?? []);
+    const partite = scritture.get(lunedi)?.partite ?? 0;
+    const letti = await Promise.all([
+      sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati,sostituti").gte("giorno", lunedi).lte("giorno", fine),
+      sb.from("allenamenti").select("giorno").gte("giorno", lunedi).lte("giorno", fine),
+      sb.from("sedute_spostate").select("giorni").eq("lunedi", lunedi).maybeSingle(),
+    ]);
+    if ((scritture.get(lunedi)?.partite ?? 0) === partite) return letti;
+  }
+}
+
 async function userId() {
   const { data } = await createClient().auth.getSession();
   return data.session?.user.id ?? null;
@@ -150,13 +177,7 @@ export function useSettimana(lunedi: string | null) {
   useEffect(() => {
     if (!lunedi) return;
     let vivo = true;
-    const sb = createClient();
-    const fine = aggiungiGiorni(lunedi, 6);
-    Promise.all([
-      sb.from("pasti").select("giorno,pasto,ricetta,fatto,saltati,sostituti").gte("giorno", lunedi).lte("giorno", fine),
-      sb.from("allenamenti").select("giorno").gte("giorno", lunedi).lte("giorno", fine),
-      sb.from("sedute_spostate").select("giorni").eq("lunedi", lunedi).maybeSingle(),
-    ]).then(([p, a, s]) => {
+    leggiSettimana(lunedi).then(([p, a, s]) => {
       if (!vivo) return;
       if (p.error || a.error) {
         setErrore((p.error ?? a.error)!.message);
@@ -191,9 +212,10 @@ export function useSettimana(lunedi: string | null) {
       const next = { ...corrente, pasti: { ...corrente.pasti, [k]: nuovo } };
       tieniSettimana(lunedi, next);
       setDati(next);
-      const { error } = await createClient()
-        .from("pasti")
-        .upsert({ user_id: await userId(), giorno, pasto, ...nuovo });
+      const { error } = await scrivi(
+        lunedi,
+        userId().then((user_id) => createClient().from("pasti").upsert({ user_id, giorno, pasto, ...nuovo }))
+      );
       if (error) setErrore(error.message);
     },
     [lunedi, setDati]
@@ -211,9 +233,12 @@ export function useSettimana(lunedi: string | null) {
       tieniSettimana(lunedi, next);
       setDati(next);
       const sb = createClient();
-      const { error } = fatto
-        ? await sb.from("allenamenti").delete().eq("giorno", giorno)
-        : await sb.from("allenamenti").insert({ user_id: await userId(), giorno });
+      const { error } = await scrivi(
+        lunedi,
+        fatto
+          ? sb.from("allenamenti").delete().eq("giorno", giorno)
+          : userId().then((user_id) => sb.from("allenamenti").insert({ user_id, giorno }))
+      );
       if (error) setErrore(error.message);
     },
     [lunedi, setDati]
@@ -230,9 +255,10 @@ export function useSettimana(lunedi: string | null) {
       const next = { ...corrente, spostate: giorni };
       tieniSettimana(lunedi, next);
       setDati(next);
-      const { error } = await createClient()
-        .from("sedute_spostate")
-        .upsert({ user_id: await userId(), lunedi, giorni });
+      const { error } = await scrivi(
+        lunedi,
+        userId().then((user_id) => createClient().from("sedute_spostate").upsert({ user_id, lunedi, giorni }))
+      );
       if (error) setErrore(error.message);
     },
     [lunedi, setDati]
